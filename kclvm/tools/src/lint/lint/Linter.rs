@@ -47,45 +47,122 @@
 // └─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 use kclvm_ast::ast::Program;
-use super::super::checker::base_checker::Check;
-use crate::lint::checker::{self, imports::ImportCheck};
+use super::super::checker::base_checker::{Checker, BaseChecker};
+use crate::lint::{checker::{self, imports::{ImportChecker, IMPORT_MSGS}}, message::message::{Message,MSG}, reporter::base_reporter::BaseReporter};
 use std::collections::HashMap;
 use super::config::Config;
+use walkdir::WalkDir;
+use crate::lint::reporter::base_reporter::Reporter;
+use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
+// use kclvm_sema::scope::ProgramScope;
 // use std::collections::HashMap;
+use kclvm_parser::parse_program;
 pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
+use once_cell::sync::Lazy;
 
-
-pub enum Checker {
-    ImportCheck,
-    MiscChecker,
-    BasicChecker
-}
-struct CheckerFacotry{}
-impl CheckerFacotry{
-    pub fn new_checker(checker: &Checker, config: &'static Config) -> Box<dyn Check + 'static>{
-        match checker{
-            Checker::ImportCheck => Box::new(ImportCheck::new(&config)),
-            _ => Box::new(ImportCheck::new(&config)),
-        }
-    }
-}
-
+pub const Linter_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
+    vec![
+        MSG{ 
+            id: String::from("E0999"), 
+            short_info: String::from("Parse failed."), 
+            long_info: String::from("Parse failed:{}."),
+        },
+    ]
+});
 
 
 
 pub struct Linter{
-    pub config: Config,
-    
+    path: Option<String>,
+    file_list: Vec<String>,
+    checkers:  Vec<BaseChecker>,
+    reporters: Vec<BaseReporter>,
+    config: Config,
+    msgs: Vec<Message>,
+    MSGS: Vec<MSG>,
+    msgs_map: HashMap<String, u32>,
 }
 
+impl Linter{
+    pub fn new() -> Self{
+        Self { 
+            path: None, 
+            file_list: vec![], 
+            checkers: vec![], 
+            reporters: vec![], 
+            config: Config::DEFAULT_CONFIG(), 
+            msgs: vec![], 
+            MSGS: Linter_MSGS.to_vec(), 
+            msgs_map: HashMap::new() ,
+        }
 
-#[test]
-fn test_lint() {
-    let lint: Linter = Linter { config: String::from("123") };
-    let import_checker = CheckerFacotry::new_checker(
-        &Checker::ImportCheck, &lint.config
-    );
-    let config = import_checker.check();
-    println!("config: {}", config);
+    }
+
+    fn reset(&mut self){
+        self.reporters = vec![];
+        self.checkers = vec![];
+        self.MSGS = Linter_MSGS.to_vec();
+        self.msgs = vec![];
+        self.msgs_map = HashMap::new();
+    }
+
+    fn register_checkers(&mut self, checkers: Vec<Checker>){
+        for c in checkers{
+            let checker = BaseChecker::new(c);
+            self.checkers.push(checker);
+        }
+    }
+
+    fn register_reporters(&mut self, reporters: Vec<Reporter>){
+        for r in reporters{
+            let reporter = BaseReporter::new(r);
+            self.reporters.push(reporter);
+        }
+    }
+
+    fn get_scope(&self, file: &str) -> ProgramScope{
+        let mut prog = parse_program(file);
+        let scope = resolve_program(&mut prog);
+        scope
+    }
+
+    pub fn run(&mut self, file: &str){
+        let scope = self.get_scope(file);
+        self.register_checkers(vec![Checker::ImportCheck, Checker::MiscChecker]);
+        self.register_reporters(vec![Reporter::STDOUT]);
+        for c in &mut self.checkers{
+            print!("{:?}\n", c.kind);
+            c.check();
+            let msgs = c.get_msgs();
+            // collect lint error
+            for m in msgs{
+                print!("{:?}\n", m);
+                self.msgs.push(m)
+            }
+            print!("----------\n")
+        }
+        print!("{}\n",self.msgs.len());
+        for r in &self.reporters{
+            print!("{:?}\n", r.kind);
+            r.print_msg(&self.msgs);
+        }
+
+
+        // for m in &self.msgs{
+        //     print!("{:?}", m)
+        // }
+
+    }
+
 }
+
+// #[test]
+// fn test_lint() {
+//     let lint: Linter = Linter { config: String::from("123") };
+//     let import_checker = CheckerFacotry::new_checker(
+//         &Checker::ImportCheck, &lint.config
+//     );
+//     let config = import_checker.check();
+//     println!("config: {}", config);
+// }

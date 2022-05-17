@@ -1,34 +1,70 @@
 use kclvm_ast::ast::{Program};
+use super::imports::{ImportChecker};
 use super::super::message::message::{Message, MSG};
 use super::super::lint::Linter::Linter;
 use super::super::lint::config::Config;
-pub struct BaseChecker<'c>{
-    // checker name (you may reuse an existing one)
-    pub name: String,
+use once_cell::sync::Lazy;
+
+#[derive(Debug)]
+pub enum Checker {
+    ImportCheck,
+    MiscChecker,
+    BasicChecker,
+}
+
+
+pub struct BaseChecker{
+    pub kind: Checker,
+    pub sub_checker: Box<dyn Check>,
     // options level (0 will be displaying in --help, 1 in --long-help)
     // level = 1
     // messages constant to display
-    pub MSGS: Vec<MSG>,
+    // pub MSGS: Vec<MSG>,
     // messages issued by this checker
-    pub msgs: Vec<Message>,
+    // pub msgs: Vec<Message>,
     // mark this checker as enabled or not.
     // enabled: bool
     // The Linter which Checker belong to
     // pub lint: Linter,
     // ordered list of options to control the checker behaviour
-    pub options: &'c Config, 
+    // pub options: Config, 
 }
 
-impl<'c> BaseChecker<'c>{
-    pub fn new(name: String, MSGS: Vec<MSG>, msgs: Vec<Message>, options: &'c Config) -> Self{
-        Self { name, MSGS, msgs, options }
+
+struct CheckerFacotry{}
+impl CheckerFacotry{
+    pub fn new_checker(checker: &Checker) -> Box<dyn Check>{
+        match checker{
+            ImportCheck => Box::new(ImportChecker::new()),
+            _ => Box::new(ImportChecker::new()),
+        }
     }
 }
 
+impl BaseChecker{
+    pub fn new(kind: Checker) -> Self{
+        let sub_checker = CheckerFacotry::new_checker(&kind);
+        Self { kind, sub_checker }
+    }
+    pub fn check(&mut self) {
+        let c = &mut self.sub_checker;
+        c.check()
+    }
+    pub fn get_msgs(&self) -> Vec<Message>{
+        let c = &self.sub_checker;
+        let msgs = c.get_msgs();
+        msgs
+    }
+}
+
+// pub type CheckerType<T> = Box<BaseChecke<T>>;
+
 // pub trait Check {
 //     fn check(&self, prog: Program);
+
 // }
 pub trait Check {
-    fn check(&self) -> &Config;
+    fn check(&mut self);
+    fn get_msgs(&self) -> Vec<Message>;
 }
 

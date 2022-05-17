@@ -1,4 +1,4 @@
-use super::Linter::Checker;
+use super::super::checker::base_checker::Checker;
 pub struct Config{
     check_list: Vec<Checker>,
     ignore: Vec<String>,
@@ -24,7 +24,7 @@ pub struct Config{
     bad_names: Vec<String>,
 }
 impl Config {
-    pub fn DEFAULT_CONFIG() -> Self{
+    pub fn DEFAULT_CONFIG() -> Config{
         Self { 
             check_list: vec![Checker::ImportCheck, Checker::BasicChecker, Checker::MiscChecker],
             ignore: vec![],
@@ -58,6 +58,9 @@ impl Config {
                 String::from("O"),
             ]
         }
+    }
+    pub fn update(&mut self){
+        // todo
     }
 }
 
