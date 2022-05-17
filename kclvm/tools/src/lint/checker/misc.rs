@@ -3,6 +3,7 @@ use kclvm_ast::ast::{Program, Module};
 use super::base_checker::Check;
 use once_cell::sync::Lazy;
 use kclvm_error::Position;
+use super::base_checker::Checker;
 
 pub const IMPORT_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
     vec![
@@ -15,6 +16,7 @@ pub const IMPORT_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
 });
 
 pub struct MiscChecker{
+    kind: Checker,
     MSGS: Vec<MSG>,
     msgs: Vec<Message>,
     prog: Option<Program>,
@@ -25,6 +27,7 @@ pub struct MiscChecker{
 impl MiscChecker{
     pub fn new() -> Self{
         Self {
+            kind: Checker::MiscChecker,
             MSGS: IMPORT_MSGS.to_vec(),
             msgs: vec![],
             prog: None, 
@@ -36,7 +39,6 @@ impl MiscChecker{
         self.code = code;
     }
     fn check_line_too_long(&mut self, code: Option<String>){
-        print!("check line too long");
         let c = match code{
             Some(c) => c,
             None => "".to_string(),
@@ -45,7 +47,6 @@ impl MiscChecker{
         let max_line_length = 50;
         for (i, v) in code_lines.iter().enumerate(){
             if v.len() > max_line_length{
-                print!("111111111");
                 let filename = match &self.module{
                     Some(m) => m.filename.clone(),
                     None => "".to_string(),
@@ -76,4 +77,8 @@ impl Check for MiscChecker{
         let msgs = &self.msgs;
         msgs.to_vec()
     } 
+    fn get_kind(self: &MiscChecker) -> Checker{
+        let kind = self.kind.clone();
+        kind
+    }
 }

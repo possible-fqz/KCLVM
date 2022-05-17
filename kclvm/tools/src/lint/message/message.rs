@@ -25,10 +25,14 @@ impl Message {
 
 // impl From<Message> for String{
 //     fn from(msg: Message) -> String{
+//         let col = match msg.pos.column{
+//             Some(col) => col,
+//             None => 0,
+//         };
 //         let s = format!("{}:{}:{}:{}:{}\n{}\n{}\n^", 
-//         msg.file, msg.pos.0, msg.pos.1, msg.msg_id, msg.msg,
+//         msg.pos.filename, msg.pos.line, col, msg.msg_id, msg.msg,
 //         msg.source_code,
-//         " ".repeat(msg.pos.1 as usize - 1));
+//         " ".repeat(col as usize - 1));
 //         s
 //     }
 // }

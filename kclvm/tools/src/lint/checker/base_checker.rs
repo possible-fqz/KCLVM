@@ -3,9 +3,10 @@ use super::imports::{ImportChecker};
 use super::super::message::message::{Message, MSG};
 use super::super::lint::Linter::Linter;
 use super::super::lint::config::Config;
+use super::misc::MiscChecker;
 use once_cell::sync::Lazy;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Checker {
     ImportCheck,
     MiscChecker,
@@ -33,9 +34,10 @@ pub struct BaseChecker{
 
 struct CheckerFacotry{}
 impl CheckerFacotry{
-    pub fn new_checker(checker: &Checker) -> Box<dyn Check>{
+    pub fn new_checker(checker: Checker) -> Box<dyn Check>{
         match checker{
-            ImportCheck => Box::new(ImportChecker::new()),
+            Checker::ImportCheck => Box::new(ImportChecker::new()),
+            Checker::MiscChecker => Box::new(MiscChecker::new()),
             _ => Box::new(ImportChecker::new()),
         }
     }
@@ -43,7 +45,7 @@ impl CheckerFacotry{
 
 impl BaseChecker{
     pub fn new(kind: Checker) -> Self{
-        let sub_checker = CheckerFacotry::new_checker(&kind);
+        let sub_checker = CheckerFacotry::new_checker(kind.clone());
         Self { kind, sub_checker }
     }
     pub fn check(&mut self) {
@@ -54,6 +56,12 @@ impl BaseChecker{
         let c = &self.sub_checker;
         let msgs = c.get_msgs();
         msgs
+    }
+
+    pub fn get_kind(&self) -> Checker{
+        let c = &self.sub_checker;
+        let kind = c.get_kind();
+        kind
     }
 }
 
@@ -66,5 +74,6 @@ impl BaseChecker{
 pub trait Check {
     fn check(&mut self);
     fn get_msgs(&self) -> Vec<Message>;
+    fn get_kind(&self) -> Checker;
 }
 

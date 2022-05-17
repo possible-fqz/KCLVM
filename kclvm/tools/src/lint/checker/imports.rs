@@ -1,6 +1,6 @@
 use super::super::message::message::{Message, MSG};
 use kclvm_ast::ast::{Program, Module};
-use super::base_checker::Check;
+use super::base_checker::{Check,Checker};
 use once_cell::sync::Lazy;
 use kclvm_error::Position;
 
@@ -55,6 +55,7 @@ pub const IMPORT_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
 });
 
 pub struct ImportChecker{
+    kind: Checker,
     MSGS: Vec<MSG>,
     msgs: Vec<Message>,
     prog: Option<Program>,
@@ -69,6 +70,7 @@ pub struct ImportChecker{
 impl ImportChecker{
     pub fn new() -> Self{
         Self {
+            kind: Checker::ImportCheck,
             MSGS: IMPORT_MSGS.to_vec(),
             msgs: vec![],
             prog: None, 
@@ -101,5 +103,10 @@ impl Check for ImportChecker{
     fn get_msgs(self: &ImportChecker) -> Vec<Message>{
         let msgs = &self.msgs;
         msgs.to_vec()
-    } 
+    }
+    
+    fn get_kind(self: &ImportChecker) -> Checker{
+        let kind = self.kind.clone();
+        kind
+    }
 }

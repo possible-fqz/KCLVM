@@ -47,7 +47,7 @@
 // └─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 use kclvm_ast::ast::Program;
-use super::super::checker::base_checker::{Checker, BaseChecker};
+use super::super::checker::{base_checker::{Checker, Checker::{ImportCheck,MiscChecker}, BaseChecker}};
 use crate::lint::{checker::{self, imports::{ImportChecker, IMPORT_MSGS}}, message::message::{Message,MSG}, reporter::base_reporter::BaseReporter};
 use std::collections::HashMap;
 use super::config::Config;
@@ -110,6 +110,7 @@ impl Linter{
     fn register_checkers(&mut self, checkers: Vec<Checker>){
         for c in checkers{
             let checker = BaseChecker::new(c);
+            print!("{:?}1111\n", &checker.kind);
             self.checkers.push(checker);
         }
     }
@@ -129,40 +130,27 @@ impl Linter{
 
     pub fn run(&mut self, file: &str){
         let scope = self.get_scope(file);
-        self.register_checkers(vec![Checker::ImportCheck, Checker::MiscChecker]);
+        self.register_checkers(vec![ImportCheck, MiscChecker]);
         self.register_reporters(vec![Reporter::STDOUT]);
         for c in &mut self.checkers{
-            print!("{:?}\n", c.kind);
             c.check();
             let msgs = c.get_msgs();
             // collect lint error
             for m in msgs{
-                print!("{:?}\n", m);
                 self.msgs.push(m)
             }
-            print!("----------\n")
         }
-        print!("{}\n",self.msgs.len());
         for r in &self.reporters{
-            print!("{:?}\n", r.kind);
             r.print_msg(&self.msgs);
         }
-
-
-        // for m in &self.msgs{
-        //     print!("{:?}", m)
-        // }
-
     }
 
 }
 
-// #[test]
-// fn test_lint() {
-//     let lint: Linter = Linter { config: String::from("123") };
-//     let import_checker = CheckerFacotry::new_checker(
-//         &Checker::ImportCheck, &lint.config
-//     );
-//     let config = import_checker.check();
-//     println!("config: {}", config);
-// }
+#[test]
+fn test_lint() {
+    let mut lint = Linter::new();
+    let file = "/Users/zz/code/KCLVM-ant/hello.k";
+    println!("{}", &file);
+    lint.run(&file);
+}
