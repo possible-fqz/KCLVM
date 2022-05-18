@@ -125,14 +125,17 @@ impl Linter{
     fn get_ctx(&self, file: &str,) -> (String, Program, ProgramScope){
         let code = file.to_string();
         let mut prog = parse_program(file);
+        print!("ParseSuccess");
+        // apply_overrides(&mut program, &args.overrides, &[]);
         let scope = resolve_program(&mut prog);
+        print!("ResolveSuccess");
         (code, prog, scope)
     }
 
 
     pub fn run(&mut self, file: &str){
         self.register_checkers(vec![ImportCheck, MiscChecker]);
-        self.register_reporters(vec![Reporter::STDOUT]);
+        self.register_reporters(vec![Reporter::Stdout]);
         let ctx = self.get_ctx(file);
         for c in &mut self.checkers{
             c.check(&ctx);
@@ -147,12 +150,4 @@ impl Linter{
         }
     }
 
-}
-
-#[test]
-fn test_lint() {
-    let mut lint = Linter::new();
-    let file = "/Users/zz/code/KCLVM-ant/hello.k";
-    println!("{}", &file);
-    lint.run(&file);
 }

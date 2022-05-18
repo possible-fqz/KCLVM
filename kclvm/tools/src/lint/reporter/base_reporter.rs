@@ -2,7 +2,7 @@ use super::stdout_reporter::StdoutReporter;
 use super::super::message::message::{Message, MSG};
 #[derive(Debug)]
 pub enum Reporter{
-    STDOUT,
+    Stdout,
 }
 
 pub struct BaseReporter{
