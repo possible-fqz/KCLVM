@@ -94,6 +94,7 @@ impl<'ctx> Resolver<'ctx> {
                         end,
                         ty: Rc::new(Type::schema(schema_ty)),
                         kind: ScopeObjectKind::Definition,
+                        used: false,
                     },
                 )
             }
@@ -137,6 +138,7 @@ impl<'ctx> Resolver<'ctx> {
                             end,
                             ty: Rc::new(Type::schema(schema_ty)),
                             kind: ScopeObjectKind::Definition,
+                            used: false,
                         },
                     )
                 }
@@ -264,6 +266,7 @@ impl<'ctx> Resolver<'ctx> {
                     end,
                     ty,
                     kind: ScopeObjectKind::Variable,
+                    used: false,
                 },
             );
         }
@@ -317,6 +320,7 @@ impl<'ctx> Resolver<'ctx> {
                 end,
                 ty,
                 kind: ScopeObjectKind::Variable,
+                used: false,
             },
         );
     }

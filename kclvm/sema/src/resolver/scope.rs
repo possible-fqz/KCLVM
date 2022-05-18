@@ -24,6 +24,8 @@ pub struct ScopeObject {
     pub ty: Rc<Type>,
     /// The scope object kind.
     pub kind: ScopeObjectKind,
+    /// The flag indicating whether this scope is used, for unused import/var checking.
+    pub used: bool
 }
 
 impl ScopeObject {
@@ -191,6 +193,7 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
+    pub warning: IndexMap<String, String>,
 }
 
 impl ProgramScope {
@@ -217,6 +220,7 @@ pub(crate) fn builtin_scope() -> Scope {
                 end: Position::dummy_pos(),
                 ty: Rc::new(builtin_func.clone()),
                 kind: ScopeObjectKind::Definition,
+                used: false,
             })),
         );
     }

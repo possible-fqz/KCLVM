@@ -635,6 +635,9 @@ dependencies = [
  "kclvm-ast",
  "kclvm-error",
  "kclvm-parser",
+ "kclvm-sema",
+ "once_cell",
+ "walkdir",
 ]
 
 [[package]]

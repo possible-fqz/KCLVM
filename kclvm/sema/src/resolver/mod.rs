@@ -78,6 +78,7 @@ impl<'ctx> Resolver<'ctx> {
         ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
+            warning: IndexMap::new(),
         }
     }
 }

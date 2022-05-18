@@ -15,6 +15,7 @@ use crate::resolver::pos::GetPos;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
+    // lint TODO: reimport, import position, import self, 
     pub fn resolve_import(&mut self) {
         let main_files = self.program.get_main_files();
         for modules in self.program.pkgs.values() {
@@ -161,6 +162,7 @@ impl<'ctx> Resolver<'ctx> {
                                                 end,
                                                 ty: Rc::new(ty),
                                                 kind: ScopeObjectKind::Module,
+                                                used: false,
                                             })),
                                         );
                                         matches!(kind, ModuleKind::User)

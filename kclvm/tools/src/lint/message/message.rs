@@ -13,7 +13,6 @@ pub struct Message{
 impl Message {
     pub fn new( 
         msg_id: String,
-        file: String,
         msg: String,
         source_code: String,
         pos: Position,

@@ -108,6 +108,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 end,
                 ty: ty.clone(),
                 kind: ScopeObjectKind::TypeAlias,
+                used: false,
             },
         );
         ty
@@ -246,6 +247,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                         end,
                         ty: self.any_ty(),
                         kind: ScopeObjectKind::Variable,
+                        used: false,
                     },
                 );
             }
@@ -292,6 +294,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 end,
                 ty: expected_ty.clone(),
                 kind: ScopeObjectKind::Variable,
+                used: false,
             },
         );
         if let Some(value) = &schema_attr.value {
@@ -692,6 +695,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end,
                     ty: self.any_ty(),
                     kind: ScopeObjectKind::Variable,
+                    used: false,
                 },
             );
         }
@@ -944,6 +948,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                     end: end.clone(),
                     ty: param.ty.clone(),
                     kind: ScopeObjectKind::Parameter,
+                    used: false,
                 },
             )
         }
@@ -1000,6 +1005,7 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
+        // TODO: unused import
         self.resolve_var(
             &identifier.names,
             &identifier.pkgpath,

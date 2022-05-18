@@ -48,6 +48,7 @@ impl<'ctx> Resolver<'ctx> {
                                 end: pos.clone(),
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
+                                used: false,
                             },
                         );
                         if ty.is_none() {
@@ -74,6 +75,7 @@ impl<'ctx> Resolver<'ctx> {
                                 end: pos.clone(),
                                 ty: self.any_ty(),
                                 kind: ScopeObjectKind::Variable,
+                                used: false,
                             },
                         );
                         return self.any_ty();
