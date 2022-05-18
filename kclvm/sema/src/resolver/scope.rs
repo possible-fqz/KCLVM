@@ -9,7 +9,7 @@ use crate::resolver::pos::ContainsPos;
 use crate::resolver::Resolver;
 use crate::ty::Type;
 use crate::{builtin::BUILTIN_FUNCTIONS, ty::TypeInferMethods};
-use kclvm_error::{Position, Warning};
+use kclvm_error::{Position};
 
 /// The object stored in the scope.
 #[derive(PartialEq, Clone, Debug)]
@@ -193,7 +193,6 @@ impl Scope {
 pub struct ProgramScope {
     pub scope_map: IndexMap<String, Rc<RefCell<Scope>>>,
     pub import_names: IndexMap<String, IndexMap<String, String>>,
-    pub warning: Vec<Warning>,
 }
 
 impl ProgramScope {

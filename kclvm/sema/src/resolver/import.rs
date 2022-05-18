@@ -8,6 +8,7 @@ use crate::{
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_error::*;
+use core::borrow;
 use std::{cell::RefCell, path::Path, rc::Rc};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
@@ -15,7 +16,6 @@ use crate::resolver::pos::GetPos;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
-    // lint TODO: reimport, import position, import self, 
     pub fn resolve_import(&mut self) {
         let main_files = self.program.get_main_files();
         for modules in self.program.pkgs.values() {
@@ -88,6 +88,7 @@ impl<'ctx> Resolver<'ctx> {
     /// Init import list and store the module scope object into the scope map.
     fn init_import_list(&mut self) {
         let modules = self.program.pkgs.get(&self.ctx.pkgpath);
+        println!("{:?}", &self.ctx.pkgpath);
         match modules {
             Some(modules) => {
                 for module in modules {
@@ -212,4 +213,33 @@ impl<'ctx> Resolver<'ctx> {
         self.ctx.filename = filename.to_string();
         self.scope = self.scope_map.get(pkgpath).unwrap().clone();
     }
+
+    pub(crate) fn check_unusd_import(&mut self) {
+        match self.scope_map.get(kclvm_ast::MAIN_PKG) {
+            Some(main_scope) => {
+                let main_scope = main_scope.clone();
+                let scope = main_scope.borrow();
+                for (_, obj) in &mut scope.elems.iter(){
+                    let obj = obj.clone();
+                    let obj = obj.borrow();
+                    match &obj.ty.kind {
+                        TypeKind::Module(ModuleType) => {
+                            print!("check_unusd_import:{:?}\n", obj.name);
+                            print!("used: {:?}\n", obj.used);
+                        },
+                        _ => {},
+                    }
+
+                }
+
+                
+
+            },
+            _ => {},
+        }
+    }
 }
+
+        // 1.在self.scope_map 找到所有 scope.kind == ScopeKind::Package
+        // 2.//在scope.elem找 module.used == false
+        // 3.module对应的import stmt 

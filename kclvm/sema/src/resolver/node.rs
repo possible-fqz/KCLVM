@@ -1005,7 +1005,30 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
     }
 
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
-        // TODO: unused import
+        let first_name = identifier.names[0].clone();
+        // print!("pkgpath: {:?}\n", identifier.pkgpath.to_string());
+        // print!("id: {:?}\n", first_name);
+        let pkg = &identifier.pkgpath;
+        match self.scope_map.get(kclvm_ast::MAIN_PKG) {
+            Some(main_scope) => {
+                // let main_scope = main_scope.clone();
+                let scope = main_scope.borrow_mut();
+                for (_, obj) in &mut scope.elems.iter(){
+                    // let obj = obj.clone();
+                    let mut obj = obj.borrow_mut();
+                    match &obj.ty.kind {
+                        TypeKind::Module(ModuleType) => {
+                            if obj.name == first_name{
+                                obj.used = true
+                            }
+                        },
+                        _ => continue,
+                    }
+
+                }
+            }
+            _ => {}
+        }
         self.resolve_var(
             &identifier.names,
             &identifier.pkgpath,
