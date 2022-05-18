@@ -1,5 +1,6 @@
 use super::super::message::message::{Message, MSG};
 use kclvm_ast::ast::{Program, Module};
+use kclvm_sema::resolver::scope::ProgramScope;
 use super::base_checker::Check;
 use once_cell::sync::Lazy;
 use kclvm_error::Position;
@@ -19,9 +20,11 @@ pub struct MiscChecker{
     kind: Checker,
     MSGS: Vec<MSG>,
     msgs: Vec<Message>,
-    prog: Option<Program>,
     module: Option<Module>,
     code: Option<String>,
+    prog: Option<Program>,
+    scope: Option<ProgramScope>,
+    
 }
 
 impl MiscChecker{
@@ -30,13 +33,16 @@ impl MiscChecker{
             kind: Checker::MiscChecker,
             MSGS: IMPORT_MSGS.to_vec(),
             msgs: vec![],
-            prog: None, 
             module: None, 
             code: None,
+            prog: None, 
+            scope: None
         }
     }
-    fn get_contex(&mut self, code: Option<String>){
-        self.code = code;
+    fn set_contex(&mut self,  ctx: &(String, Program, ProgramScope)){
+        self.code = Some(ctx.0.clone());
+        self.prog = Some(ctx.1.clone());
+        self.scope = Some(ctx.2.clone());
     }
     fn check_line_too_long(&mut self, code: Option<String>){
         let c = match code{
@@ -67,9 +73,9 @@ impl MiscChecker{
 }
 
 impl Check for MiscChecker{
-    fn check(self: &mut MiscChecker){
+    fn check(self: &mut MiscChecker, ctx: &(String, Program, ProgramScope)){
         let code = "123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123".to_string();
-        self.get_contex(Some(code));
+        self.set_contex(ctx);
         self.check_line_too_long(self.code.clone())
     }
 

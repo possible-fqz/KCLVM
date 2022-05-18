@@ -1,5 +1,6 @@
 use super::super::message::message::{Message, MSG};
 use kclvm_ast::ast::{Program, Module};
+use kclvm_sema::resolver::scope::ProgramScope;
 use super::base_checker::{Check,Checker};
 use once_cell::sync::Lazy;
 use kclvm_error::Position;
@@ -58,9 +59,10 @@ pub struct ImportChecker{
     kind: Checker,
     MSGS: Vec<MSG>,
     msgs: Vec<Message>,
+    code: Option<String>,
     prog: Option<Program>,
     module: Option<Module>,
-    code: Option<String>,
+    scope: Option<ProgramScope>,
     root: Option<String>,
     has_imported_module: Option<Vec<String>>,
     import_name_map: Option<Vec<String>>,
@@ -76,18 +78,23 @@ impl ImportChecker{
             prog: None, 
             module: None, 
             code: None, 
+            scope: None,
             root: None, 
             has_imported_module: None, 
             import_name_map: None, 
             import_position_check: true, 
         }
     }
-    fn get_contex(&mut self, code: String){
-        self.code = Some(code);
+    fn set_contex(&mut self, ctx: &(String, Program, ProgramScope)){
+        self.code = Some(ctx.0.clone());
+        self.prog = Some(ctx.1.clone());
+        self.scope= Some(ctx.2.clone());
     }
 }
+
 impl Check for ImportChecker{
-    fn check(self: &mut ImportChecker){
+    fn check(self: &mut ImportChecker, ctx: &(String, Program, ProgramScope)){
+        self.set_contex(ctx);
         let m = Message { 
             msg_id: (String::from("123")), 
             msg: (String::from("123")), 

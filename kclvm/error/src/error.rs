@@ -86,3 +86,28 @@ impl ErrorKind {
         return format!("{:?}", self);
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Warning {
+    pub code: &'static str,
+    pub kind: ErrorKind,
+    pub message: Option<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum WarningKind {
+    ImportWaring,
+}
+
+impl std::fmt::Display for WarningKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl WarningKind {
+    #[allow(dead_code)]
+    pub fn name(&self) -> String {
+        return format!("{:?}", self);
+    }
+}

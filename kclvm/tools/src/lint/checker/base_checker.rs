@@ -1,4 +1,5 @@
 use kclvm_ast::ast::{Program};
+use kclvm_sema::resolver::scope::ProgramScope;
 use super::imports::{ImportChecker};
 use super::super::message::message::{Message, MSG};
 use super::super::lint::Linter::Linter;
@@ -48,9 +49,9 @@ impl BaseChecker{
         let sub_checker = CheckerFacotry::new_checker(kind.clone());
         Self { kind, sub_checker }
     }
-    pub fn check(&mut self) {
+    pub fn check(&mut self, ctx: &(String, Program, ProgramScope)) {
         let c = &mut self.sub_checker;
-        c.check()
+        c.check(ctx)
     }
     pub fn get_msgs(&self) -> Vec<Message>{
         let c = &self.sub_checker;
@@ -72,7 +73,7 @@ impl BaseChecker{
 
 // }
 pub trait Check {
-    fn check(&mut self);
+    fn check(&mut self, ctx: &(String, Program, ProgramScope));
     fn get_msgs(&self) -> Vec<Message>;
     fn get_kind(&self) -> Checker;
 }

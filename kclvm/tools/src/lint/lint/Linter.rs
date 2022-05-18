@@ -122,18 +122,20 @@ impl Linter{
         }
     }
 
-    fn get_scope(&self, file: &str) -> ProgramScope{
+    fn get_ctx(&self, file: &str,) -> (String, Program, ProgramScope){
+        let code = file.to_string();
         let mut prog = parse_program(file);
         let scope = resolve_program(&mut prog);
-        scope
+        (code, prog, scope)
     }
 
+
     pub fn run(&mut self, file: &str){
-        let scope = self.get_scope(file);
         self.register_checkers(vec![ImportCheck, MiscChecker]);
         self.register_reporters(vec![Reporter::STDOUT]);
+        let ctx = self.get_ctx(file);
         for c in &mut self.checkers{
-            c.check();
+            c.check(&ctx);
             let msgs = c.get_msgs();
             // collect lint error
             for m in msgs{
