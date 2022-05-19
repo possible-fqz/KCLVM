@@ -324,6 +324,8 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
                 None => bug!("invalid ast schema attr op kind"),
             }
         }
+        let pkgpath = &self.ctx.pkgpath.clone();
+        self.check_unused(&pkgpath, &schema_attr.type_str.node);
         self.any_ty()
     }
 
@@ -1006,30 +1008,32 @@ impl<'ctx> MutSelfTypedResultWalker<'ctx> for Resolver<'ctx> {
 
     fn walk_identifier(&mut self, identifier: &'ctx ast::Identifier) -> Self::Result {
         let id_firstname = identifier.names[0].clone();
-        match self.scope_map.get(kclvm_ast::MAIN_PKG) {
-            Some(main_scope) => {
-                let scope = main_scope.borrow_mut();
-                for (_, obj) in scope.elems.iter(){
-                    let mut obj = obj.borrow_mut();
-                    match &obj.ty.kind {
-                        TypeKind::Module(ModuleType) => {
-                            let pkgpath = &ModuleType.pkgpath;
-                            let mut module_name_list: Vec<&str> = pkgpath.split(".").collect();
-                            let module_name = module_name_list.pop();
-                            match module_name {
-                                Some(module_name) => if module_name.to_string() == id_firstname{
-                                    obj.used = true;
-                                    },
-                                None => continue,
-                            }
-                        },
-                        _ => continue,
-                    }
+        let pkgpath = self.ctx.pkgpath.clone();
+        self.check_unused(&pkgpath, &id_firstname);
+        // match self.scope_map.get(kclvm_ast::MAIN_PKG) {
+        //     Some(main_scope) => {
+        //         let scope = main_scope.borrow_mut();
+        //         for (_, obj) in scope.elems.iter(){
+        //             let mut obj = obj.borrow_mut();
+        //             match &obj.ty.kind {
+        //                 TypeKind::Module(ModuleType) => {
+        //                     let pkgpath = &ModuleType.pkgpath;
+        //                     let mut module_name_list: Vec<&str> = pkgpath.split(".").collect();
+        //                     let module_name = module_name_list.pop();
+        //                     match module_name {
+        //                         Some(module_name) => if module_name.to_string() == id_firstname{
+        //                             obj.used = true;
+        //                             },
+        //                         None => continue,
+        //                     }
+        //                 },
+        //                 _ => continue,
+        //             }
 
-                }
-            }
-            _ => {}
-        }
+        //         }
+        //     }
+        //     _ => {}
+        // }
         self.resolve_var(
             &identifier.names,
             &identifier.pkgpath,

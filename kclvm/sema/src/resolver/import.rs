@@ -12,6 +12,7 @@ use std::{cell::RefCell, path::Path, rc::Rc};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
 use crate::resolver::pos::GetPos;
+use regex::Regex;
 
 impl<'ctx> Resolver<'ctx> {
     /// Check import error
@@ -212,20 +213,14 @@ impl<'ctx> Resolver<'ctx> {
         self.scope = self.scope_map.get(pkgpath).unwrap().clone();
     }
 
-    pub(crate) fn check_unused_import(&mut self) {
-        match self.scope_map.get(kclvm_ast::MAIN_PKG) {
-            Some(main_scope) => {
-                let main_scope = main_scope.clone();
-                let scope = main_scope.borrow();
-                println!("parent{:?}", scope.parent);
-                println!("len{:?}", scope.elems.len());
+    pub(crate) fn check_unused_import(&mut self, pkgpath: &str) {
+        match self.scope_map.get(pkgpath) {
+            Some(scope) => {
+                let scope = scope.clone();
+                let scope = scope.borrow();
                 for (key, obj) in &mut scope.elems.iter(){
-                    println!("{:?}", key.clone());
                     let obj = obj.clone();
                     let obj = obj.borrow();
-                    println!("name: {:?}", obj.name.to_string());
-                    println!("ty.kind: {:?}", obj.ty.kind);
-                    println!("used: {:?}\n", obj.used);
                     match &obj.ty.kind {
                         TypeKind::Module(ModuleTye) => {
                             if !obj.used{
@@ -242,12 +237,6 @@ impl<'ctx> Resolver<'ctx> {
                                     }],
                                 );
                             }
-                            // println!("check_unusd_import:{:?}\n", obj.name);
-                            // println!("imported:{:?}\n", ModuleTye.imported);
-                            // println!("used: {:?}\n", obj.used);
-                            // println!("start: {:?}\n", obj.start);
-                            // println!("end: {:?}\n", obj.end);
-                            // println!("---------")
                         },
                         _ => {},
                     }
@@ -260,4 +249,36 @@ impl<'ctx> Resolver<'ctx> {
             _ => {},
         }
     }
+
+    pub(crate) fn check_unused(&mut self, pkgpath: &str, name: &String) {
+        let re = Regex::new(r"[|:\[\]\{\}]").unwrap();
+        // # SchemaAttr.types, A|B, [A|B], {A|B:C}
+        let types: Vec<&str> = re.split(name).collect();
+        for t in types{
+            let t = t.to_string();
+            // name: a.b.c
+            let name: Vec<&str> = t.split(".").collect();
+            let firstname = name[0];
+            if let Some(scope) = self.scope_map.get(pkgpath) {
+                let scope = scope.borrow_mut();
+                for (_, obj) in scope.elems.iter(){
+                    let mut obj = obj.borrow_mut();
+                    match &obj.ty.kind {
+                        TypeKind::Module(ModuleType) => {
+                            let pkgpath = &ModuleType.pkgpath;
+                            let mut module_name: Vec<&str> = pkgpath.split(".").collect();
+                            if let Some(module_name) = module_name.pop(){
+                                if module_name.to_string() == firstname{
+                                    obj.used = true;
+                                }
+                            }
+                        },
+                        _ => {},
+                    }  
+                }
+            }
+        }
+
+    }
+
 }

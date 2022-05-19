@@ -614,6 +614,7 @@ dependencies = [
  "once_cell",
  "petgraph",
  "phf",
+ "regex",
  "unicode_names2",
 ]
 
