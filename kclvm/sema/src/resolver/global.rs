@@ -147,19 +147,7 @@ impl<'ctx> Resolver<'ctx> {
                 self.init_global_var_types(false);
             }
             None => {
-                self.handler.add_error(
-                    ErrorKind::CannotFindModule,
-                    &[Message {
-                        pos: Position {
-                            filename: self.ctx.filename.clone(),
-                            line: 1,
-                            column: Some(1),
-                        },
-                        style: Style::Line,
-                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
-                        note: None,
-                    }],
-                );
+                
             }
         };
     }
@@ -180,19 +168,7 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             None => {
-                self.handler.add_error(
-                    ErrorKind::CannotFindModule,
-                    &[Message {
-                        pos: Position {
-                            filename: self.ctx.filename.clone(),
-                            line: 1,
-                            column: Some(1),
-                        },
-                        style: Style::Line,
-                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
-                        note: None,
-                    }],
-                );
+
             }
         };
     }

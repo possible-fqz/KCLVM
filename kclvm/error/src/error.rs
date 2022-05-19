@@ -96,7 +96,8 @@ pub struct Warning {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum WarningKind {
-    ImportWaring,
+    UnusedImportWaring,
+    ReimportWaring,
 }
 
 impl std::fmt::Display for WarningKind {

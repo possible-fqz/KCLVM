@@ -1,3 +1,4 @@
+use indexmap::IndexSet;
 use kclvm_ast::ast::{Program};
 use kclvm_sema::resolver::scope::ProgramScope;
 use super::imports::{ImportChecker};
@@ -6,6 +7,7 @@ use super::super::lint::Linter::Linter;
 use super::super::lint::config::Config;
 use super::misc::MiscChecker;
 use once_cell::sync::Lazy;
+use kclvm_error::Diagnostic;
 
 #[derive(Debug, Clone)]
 pub enum Checker {
@@ -49,7 +51,7 @@ impl BaseChecker{
         let sub_checker = CheckerFacotry::new_checker(kind.clone());
         Self { kind, sub_checker }
     }
-    pub fn check(&mut self, ctx: &(String, Program, ProgramScope)) {
+    pub fn check(&mut self, ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>)) {
         let c = &mut self.sub_checker;
         c.check(ctx)
     }
@@ -67,7 +69,7 @@ impl BaseChecker{
 }
 
 pub trait Check {
-    fn check(&mut self, ctx: &(String, Program, ProgramScope));
+    fn check(&mut self, ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>));
     fn get_msgs(&self) -> Vec<Message>;
     fn get_kind(&self) -> Checker;
 }

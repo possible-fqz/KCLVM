@@ -99,10 +99,30 @@ impl<'ctx> Resolver<'ctx> {
                             {
                                 match self.ctx.import_names.get_mut(&self.ctx.filename) {
                                     Some(mapping) => {
-                                        mapping.insert(
-                                            import_stmt.name.to_string(),
-                                            import_stmt.path.to_string(),
-                                        );
+                                        if mapping.contains_key(&import_stmt.name.to_string()){
+                                            let scope = self.scope.clone();
+                                            let scope = self.scope.borrow();
+                                            if let Some(module_scope) = scope.lookup(&import_stmt.path) {
+                                                let module = module_scope.borrow();
+                                                self.handler.add_warning(
+                                                    WarningKind::ReimportWaring,
+                                                    &[Message {
+                                                        pos: module.start.clone(),
+                                                        style: Style::Line,
+                                                        message: format!(
+                                                            "{} is reimported multiple times.",
+                                                            &import_stmt.name
+                                                        ),
+                                                        note: None,
+                                                    }],
+                                                );
+                                            }
+                                        } else {
+                                            mapping.insert(
+                                                import_stmt.name.to_string(),
+                                                import_stmt.path.to_string(),
+                                            );
+                                        }
                                     }
                                     None => {
                                         let mut mapping = IndexMap::default();
@@ -189,19 +209,7 @@ impl<'ctx> Resolver<'ctx> {
                 }
             }
             None => {
-                self.handler.add_error(
-                    ErrorKind::CannotFindModule,
-                    &[Message {
-                        pos: Position {
-                            filename: self.ctx.filename.clone(),
-                            line: 1,
-                            column: Some(1),
-                        },
-                        style: Style::Line,
-                        message: format!("pkgpath {} not found in the program", self.ctx.pkgpath),
-                        note: None,
-                    }],
-                );
+
             }
         }
     }
@@ -240,7 +248,7 @@ impl<'ctx> Resolver<'ctx> {
                         TypeKind::Module(ModuleTye) => {
                             if !obj.used{
                                 self.handler.add_warning(
-                                    WarningKind::ImportWaring,
+                                    WarningKind::UnusedImportWaring,
                                     &[Message {
                                         pos: obj.start.clone(),
                                         style: Style::Line,
@@ -257,9 +265,6 @@ impl<'ctx> Resolver<'ctx> {
                     }
 
                 }
-
-                
-
             },
             _ => {},
         }

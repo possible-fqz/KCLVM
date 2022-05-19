@@ -7,16 +7,16 @@ pub enum Reporter{
 
 pub struct BaseReporter{
     pub kind: Reporter,
-    pub sub_reporter: Box<dyn Display>,
+    pub sub_reporter: Box<dyn DisplayMsg>,
 }
 
 
 
 struct ReporterFacotry{}
 impl ReporterFacotry{
-    pub fn new_reporter(reporter: &Reporter) -> Box<dyn Display>{
+    pub fn new_reporter(reporter: &Reporter) -> Box<dyn DisplayMsg>{
         match reporter{
-            STDOUT => Box::new(StdoutReporter::new()),
+            Stdout => Box::new(StdoutReporter::new()),
             _ => Box::new(StdoutReporter::new()),
         }
     }
@@ -32,8 +32,7 @@ impl BaseReporter{
         c.print_msg(msgs)
     }
 }
-pub trait Display {
+pub trait DisplayMsg {
     fn print_msg(&self, msgs: &Vec<Message>);
-
 }
 

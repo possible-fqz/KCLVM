@@ -5,75 +5,88 @@ use super::base_checker::Check;
 use once_cell::sync::Lazy;
 use kclvm_error::Position;
 use super::base_checker::Checker;
+use kclvm_error::Diagnostic;
+use indexmap::{IndexSet, IndexMap};
 
-pub const IMPORT_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
-    vec![
+pub const MISC_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
+    let mut mapping = IndexMap::default();
+    mapping.insert(
+        "E0501".to_string(),
         MSG{ 
             id: String::from("E0501"), 
             short_info: String::from("Line too long."), 
-            long_info: String::from("line too long ('{}' > '{}' characters)."),
-        },
-    ]
+            long_info: String::from("Line too long ({} > {} characters)."),
+            sarif_info: String::from("Line too long ('{0}' > '{1}' characters).")
+        }
+    );
+    mapping
 });
+
+
+
 
 pub struct MiscChecker{
     kind: Checker,
-    MSGS: Vec<MSG>,
+    MSGS: IndexMap<String, MSG>,
     msgs: Vec<Message>,
     module: Option<Module>,
     code: Option<String>,
     prog: Option<Program>,
     scope: Option<ProgramScope>,
-    
+    diagnostic: Option<IndexSet<Diagnostic>>,
 }
 
 impl MiscChecker{
     pub fn new() -> Self{
         Self {
             kind: Checker::MiscChecker,
-            MSGS: IMPORT_MSGS.to_vec(),
+            MSGS: MISC_MSGS.clone(),
             msgs: vec![],
             module: None, 
             code: None,
             prog: None, 
-            scope: None
+            scope: None,
+            diagnostic: None,
         }
     }
-    fn set_contex(&mut self,  ctx: &(String, Program, ProgramScope)){
+
+    fn set_contex(&mut self,  ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>)){
         self.code = Some(ctx.0.clone());
         self.prog = Some(ctx.1.clone());
         self.scope = Some(ctx.2.clone());
+        self.diagnostic = Some(ctx.3.clone())
     }
+
     fn check_line_too_long(&mut self, code: Option<String>){
-        let c = match code{
-            Some(c) => c,
-            None => "".to_string(),
-        };
-        let code_lines: Vec<&str> = c.split("\n").collect();
-        let max_line_length = 50;
-        for (i, v) in code_lines.iter().enumerate(){
-            if v.len() > max_line_length{
-                let filename = match &self.module{
-                    Some(m) => m.filename.clone(),
-                    None => "".to_string(),
-                };
-                self.msgs.push(Message { 
-                    msg_id: String::from("E0501"), 
-                    msg: String::from("Line too long."), 
-                    source_code: v.to_string(), 
-                    pos: Position { 
-                        filename: filename, 
-                        line: (i + 1) as u64, 
-                        column: Some(1) }, 
-                    arguments: (vec![v.len().to_string(), max_line_length.to_string()]) 
-                })
+        if let Some(c) = code {
+            let code_lines: Vec<&str> = c.split("\n").collect();
+            let max_line_length = 50;
+            for (i, v) in code_lines.iter().enumerate(){
+                if v.len() > max_line_length{
+                    let filename = match &self.module{
+                        Some(m) => m.filename.clone(),
+                        None => "".to_string(),
+                    };
+                    self.msgs.push(Message { 
+                        msg_id: String::from("E0501"), 
+                        msg: String::from("Line too long."), 
+                        source_code: v.to_string(), 
+                        pos: Position { 
+                            filename: filename, 
+                            line: (i + 1) as u64, 
+                            column: Some(1) }, 
+                        arguments: (vec![v.len().to_string(), max_line_length.to_string()]) 
+                    })
+                }
             }
+
         }
+
     }
 }
 
 impl Check for MiscChecker{
-    fn check(self: &mut MiscChecker, ctx: &(String, Program, ProgramScope)){
+    fn check(self: &mut MiscChecker, ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>)){
         let code = "123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123123".to_string();
         self.set_contex(ctx);
         self.check_line_too_long(self.code.clone())

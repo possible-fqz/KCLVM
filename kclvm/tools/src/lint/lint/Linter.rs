@@ -46,29 +46,33 @@
 // │                                                                                                             │
 // └─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+use indexmap::{IndexSet, IndexMap};
 use kclvm_ast::ast::Program;
 use super::super::checker::{base_checker::{Checker, Checker::{ImportCheck,MiscChecker}, BaseChecker}};
-use crate::lint::{checker::{self, imports::{ImportChecker, IMPORT_MSGS}}, message::message::{Message,MSG}, reporter::base_reporter::BaseReporter};
+use crate::lint::{checker::{imports::{ImportChecker, IMPORT_MSGS}}, message::message::{Message,MSG}, reporter::base_reporter::BaseReporter};
 use std::collections::HashMap;
 use super::config::Config;
-use walkdir::WalkDir;
+use kclvm_error::Diagnostic;
+use kclvm_parser::load_program;
 use crate::lint::reporter::base_reporter::Reporter;
-use kclvm_sema::resolver::{resolve_program, scope::ProgramScope};
-// use kclvm_sema::scope::ProgramScope;
-// use std::collections::HashMap;
-use kclvm_parser::parse_program;
+use kclvm_sema::resolver::{scope::ProgramScope, Options, Resolver};
+use kclvm_sema::pre_process::pre_process_program;
 pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
 use once_cell::sync::Lazy;
 
-pub const Linter_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
-    vec![
+pub const Linter_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
+    let mut mapping = IndexMap::default();
+    mapping.insert(
+        "E0999".to_string(),
         MSG{ 
             id: String::from("E0999"), 
             short_info: String::from("Parse failed."), 
-            long_info: String::from("Parse failed:{}."),
-        },
-    ]
+            long_info: String::from("Parse failed: {}."),
+            sarif_info: String::from("Parse failed: '{0}'.")
+        }
+    );
+    mapping
 });
 
 
@@ -80,7 +84,7 @@ pub struct Linter{
     reporters: Vec<BaseReporter>,
     config: Config,
     msgs: Vec<Message>,
-    MSGS: Vec<MSG>,
+    MSGS: IndexMap<String, MSG>,
     msgs_map: HashMap<String, u32>,
 }
 
@@ -93,7 +97,7 @@ impl Linter{
             reporters: vec![], 
             config: Config::DEFAULT_CONFIG(), 
             msgs: vec![], 
-            MSGS: Linter_MSGS.to_vec(), 
+            MSGS: Linter_MSGS.clone(), 
             msgs_map: HashMap::new() ,
         }
 
@@ -102,7 +106,7 @@ impl Linter{
     fn reset(&mut self){
         self.reporters = vec![];
         self.checkers = vec![];
-        self.MSGS = Linter_MSGS.to_vec();
+        self.MSGS = Linter_MSGS.clone();
         self.msgs = vec![];
         self.msgs_map = HashMap::new();
     }
@@ -122,14 +126,23 @@ impl Linter{
         }
     }
 
-    fn get_ctx(&self, file: &str,) -> (String, Program, ProgramScope){
+    fn get_ctx(&self, file: &str,) -> (String, Program, ProgramScope, IndexSet<Diagnostic>){
         let code = file.to_string();
-        let mut prog = parse_program(file);
-        print!("ParseSuccess");
+        let file_list = vec![file];
+        let mut prog = load_program(&file_list, None);
         // apply_overrides(&mut program, &args.overrides, &[]);
-        let scope = resolve_program(&mut prog);
-        print!("ResolveSuccess");
-        (code, prog, scope)
+        pre_process_program(&mut prog);
+        let mut resolver = Resolver::new(
+            &prog,
+            Options {
+                raise_err: false,
+                config_auto_fix: false,
+            },
+        );
+        resolver.resolve_import();
+        let scope = resolver.check(kclvm_ast::MAIN_PKG);
+        let diagnostics = resolver.handler.diagnostics;
+        (code, prog, scope, diagnostics)
     }
 
 
