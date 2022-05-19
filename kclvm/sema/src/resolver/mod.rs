@@ -75,7 +75,9 @@ impl<'ctx> Resolver<'ctx> {
             }
             None => bug!("pkgpath {} not found in the program", pkgpath),
         }
-        self.check_unusd_import();
+        if pkgpath == kclvm_ast::MAIN_PKG {
+            self.check_unused_import();
+        }
         ProgramScope {
             scope_map: self.scope_map.clone(),
             import_names: self.ctx.import_names.clone(),
@@ -131,8 +133,8 @@ pub fn resolve_program(program: &mut Program) -> ProgramScope {
             config_auto_fix: false,
         },
     );
-    
     let scope = resolver.check(kclvm_ast::MAIN_PKG);
+    resolver.handler.emit();
     resolver.handler.abort_if_any_errors();
     let type_alias_mapping = resolver.ctx.type_alias_mapping.clone();
     process_program_type_alias(program, type_alias_mapping);

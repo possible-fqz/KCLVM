@@ -86,9 +86,7 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Init import list and store the module scope object into the scope map.
     fn init_import_list(&mut self) {
-        println!("{:?}", &self.program.pkgs.len());
         let modules = self.program.pkgs.get(&self.ctx.pkgpath);
-        println!("pkgpath:{:?}", &self.ctx.pkgpath);
         match modules {
             Some(modules) => {
                 for module in modules {
@@ -214,22 +212,42 @@ impl<'ctx> Resolver<'ctx> {
         self.scope = self.scope_map.get(pkgpath).unwrap().clone();
     }
 
-    pub(crate) fn check_unusd_import(&mut self) {
+    pub(crate) fn check_unused_import(&mut self) {
         match self.scope_map.get(kclvm_ast::MAIN_PKG) {
             Some(main_scope) => {
                 let main_scope = main_scope.clone();
                 let scope = main_scope.borrow();
-                for (_, obj) in &mut scope.elems.iter(){
+                println!("parent{:?}", scope.parent);
+                println!("len{:?}", scope.elems.len());
+                for (key, obj) in &mut scope.elems.iter(){
+                    println!("{:?}", key.clone());
                     let obj = obj.clone();
                     let obj = obj.borrow();
                     println!("name: {:?}", obj.name.to_string());
                     println!("ty.kind: {:?}", obj.ty.kind);
+                    println!("used: {:?}\n", obj.used);
                     match &obj.ty.kind {
-                        TypeKind::Module(ModuleType) => {
-                            println!("check_unusd_import:{:?}\n", obj.name);
-                            println!("used: {:?}\n", obj.used);
-                            println!("start: {:?}\n", obj.start);
-                            println!("start: {:?}\n", obj.start);
+                        TypeKind::Module(ModuleTye) => {
+                            if !obj.used{
+                                self.handler.add_warning(
+                                    WarningKind::ImportWaring,
+                                    &[Message {
+                                        pos: obj.start.clone(),
+                                        style: Style::Line,
+                                        message: format!(
+                                            "{} imported but unused.",
+                                            obj.name
+                                        ),
+                                        note: None,
+                                    }],
+                                );
+                            }
+                            // println!("check_unusd_import:{:?}\n", obj.name);
+                            // println!("imported:{:?}\n", ModuleTye.imported);
+                            // println!("used: {:?}\n", obj.used);
+                            // println!("start: {:?}\n", obj.start);
+                            // println!("end: {:?}\n", obj.end);
+                            // println!("---------")
                         },
                         _ => {},
                     }
@@ -243,7 +261,3 @@ impl<'ctx> Resolver<'ctx> {
         }
     }
 }
-
-        // 1.在self.scope_map 找到所有 scope.kind == ScopeKind::Package
-        // 2.//在scope.elem找 module.used == false
-        // 3.module对应的import stmt 

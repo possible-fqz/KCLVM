@@ -182,6 +182,17 @@ impl Handler {
         self
     }
 
+    pub fn add_warning(&mut self, warning: WarningKind, msgs: &[Message]) -> &mut Self {
+        let diag = Diagnostic {
+            level: Level::Warning,
+            messages: msgs.to_owned(),
+            code: Some(DiagnosticId::Warning(warning)),
+        };
+        self.add_diagnostic(diag);
+
+        self
+    }
+
     /// Store a diagnostics
     #[inline]
     fn add_diagnostic(&mut self, diagnostic: Diagnostic) -> &mut Self {
