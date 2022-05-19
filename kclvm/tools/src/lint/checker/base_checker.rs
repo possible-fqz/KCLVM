@@ -66,12 +66,6 @@ impl BaseChecker{
     }
 }
 
-// pub type CheckerType<T> = Box<BaseChecke<T>>;
-
-// pub trait Check {
-//     fn check(&self, prog: Program);
-
-// }
 pub trait Check {
     fn check(&mut self, ctx: &(String, Program, ProgramScope));
     fn get_msgs(&self) -> Vec<Message>;
