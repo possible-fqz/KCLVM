@@ -8,7 +8,6 @@ use crate::{
 use indexmap::IndexMap;
 use kclvm_ast::ast;
 use kclvm_error::*;
-use core::borrow;
 use std::{cell::RefCell, path::Path, rc::Rc};
 
 use super::scope::{Scope, ScopeKind, ScopeObject, ScopeObjectKind};
@@ -87,8 +86,9 @@ impl<'ctx> Resolver<'ctx> {
 
     /// Init import list and store the module scope object into the scope map.
     fn init_import_list(&mut self) {
+        println!("{:?}", &self.program.pkgs.len());
         let modules = self.program.pkgs.get(&self.ctx.pkgpath);
-        println!("{:?}", &self.ctx.pkgpath);
+        println!("pkgpath:{:?}", &self.ctx.pkgpath);
         match modules {
             Some(modules) => {
                 for module in modules {
@@ -222,10 +222,14 @@ impl<'ctx> Resolver<'ctx> {
                 for (_, obj) in &mut scope.elems.iter(){
                     let obj = obj.clone();
                     let obj = obj.borrow();
+                    println!("name: {:?}", obj.name.to_string());
+                    println!("ty.kind: {:?}", obj.ty.kind);
                     match &obj.ty.kind {
                         TypeKind::Module(ModuleType) => {
-                            print!("check_unusd_import:{:?}\n", obj.name);
-                            print!("used: {:?}\n", obj.used);
+                            println!("check_unusd_import:{:?}\n", obj.name);
+                            println!("used: {:?}\n", obj.used);
+                            println!("start: {:?}\n", obj.start);
+                            println!("start: {:?}\n", obj.start);
                         },
                         _ => {},
                     }
