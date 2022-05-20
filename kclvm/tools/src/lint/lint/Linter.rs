@@ -50,7 +50,7 @@ use indexmap::{IndexSet, IndexMap};
 use kclvm_ast::ast::Program;
 use super::super::checker::{base_checker::{Checker, Checker::{ImportCheck,MiscChecker}, BaseChecker}};
 use crate::lint::{checker::{imports::{ImportChecker, IMPORT_MSGS}}, message::message::{Message,MSG}, reporter::base_reporter::BaseReporter};
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::{BufReader, BufRead}};
 use super::config::Config;
 use kclvm_error::Diagnostic;
 use kclvm_parser::load_program;
@@ -61,7 +61,7 @@ pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
 use once_cell::sync::Lazy;
 
-pub const Linter_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
+pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
     mapping.insert(
         "E0999".to_string(),
@@ -97,7 +97,7 @@ impl Linter{
             reporters: vec![], 
             config: Config::DEFAULT_CONFIG(), 
             msgs: vec![], 
-            MSGS: Linter_MSGS.clone(), 
+            MSGS: LINTER_MSGS.clone(), 
             msgs_map: HashMap::new() ,
         }
 
@@ -106,7 +106,7 @@ impl Linter{
     fn reset(&mut self){
         self.reporters = vec![];
         self.checkers = vec![];
-        self.MSGS = Linter_MSGS.clone();
+        self.MSGS = LINTER_MSGS.clone();
         self.msgs = vec![];
         self.msgs_map = HashMap::new();
     }
@@ -114,7 +114,6 @@ impl Linter{
     fn register_checkers(&mut self, checkers: Vec<Checker>){
         for c in checkers{
             let checker = BaseChecker::new(c);
-            print!("{:?}1111\n", &checker.kind);
             self.checkers.push(checker);
         }
     }
@@ -126,8 +125,17 @@ impl Linter{
         }
     }
 
-    fn get_ctx(&self, file: &str,) -> (String, Program, ProgramScope, IndexSet<Diagnostic>){
-        let code = file.to_string();
+    fn get_ctx(&self, file: &str) -> (Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>){
+        let f = File::open(file).unwrap();
+        let reader = BufReader::new(f);
+        let mut code_line_list:Vec<String> = vec![];
+        for line in reader.lines() {
+            // line 是 std::result::Result<std::string::String, std::io::Error> 类型
+            // line 不包含换行符
+            let line = line.unwrap();
+            code_line_list.push(line.clone());
+        }
+    
         let file_list = vec![file];
         let mut prog = load_program(&file_list, None);
         // apply_overrides(&mut program, &args.overrides, &[]);
@@ -142,7 +150,7 @@ impl Linter{
         resolver.resolve_import();
         let scope = resolver.check(kclvm_ast::MAIN_PKG);
         let diagnostics = resolver.handler.diagnostics;
-        (code, prog, scope, diagnostics)
+        (code_line_list, prog, scope, diagnostics)
     }
 
 

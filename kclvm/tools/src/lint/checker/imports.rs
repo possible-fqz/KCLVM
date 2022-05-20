@@ -63,7 +63,7 @@ pub struct ImportChecker{
     kind: Checker,
     MSGS: Vec<MSG>,
     msgs: Vec<Message>,
-    code: Option<String>,
+    code: Option<Vec<String>>,
     prog: Option<Program>,
     scope: Option<ProgramScope>,
     diagnostic: Option<IndexSet<Diagnostic>>,
@@ -81,7 +81,7 @@ impl ImportChecker{
             diagnostic: None,
         }
     }
-    fn set_contex(&mut self, ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>)){
+    fn set_contex(&mut self, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)){
         self.code = Some(ctx.0.clone());
         self.prog = Some(ctx.1.clone());
         self.scope= Some(ctx.2.clone());
@@ -90,7 +90,7 @@ impl ImportChecker{
 }
 
 impl Check for ImportChecker{
-    fn check(self: &mut ImportChecker, ctx: &(String, Program, ProgramScope, IndexSet<Diagnostic>)){
+    fn check(self: &mut ImportChecker, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)){
         self.set_contex(ctx);
 
     }
