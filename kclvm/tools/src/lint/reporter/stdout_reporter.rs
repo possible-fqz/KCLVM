@@ -1,6 +1,3 @@
-use std::fmt::Display;
-use std::process::Output;
-
 use super::super::message::message::{Message, MSG};
 use super::base_reporter::DisplayMsg;
 

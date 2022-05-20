@@ -50,12 +50,12 @@ impl MiscChecker {
         }
     }
 
-    fn set_contex(&mut self, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
-        self.code_lines = Some(ctx.0.clone());
-        self.prog = Some(ctx.1.clone());
-        self.scope = Some(ctx.2.clone());
-        self.diagnostics = Some(ctx.3.clone());
-        self.file = Some(ctx.1.clone().root);
+    fn set_contex(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+        self.code_lines = Some(ctx.1.clone());
+        self.prog = Some(ctx.2.clone());
+        self.scope = Some(ctx.3.clone());
+        self.diagnostics = Some(ctx.4.clone());
+        self.file = Some(ctx.0.clone());
     }
 
     fn check_line_too_long(&mut self, filename: String, code_lines: Vec<String>) {
@@ -74,7 +74,7 @@ impl MiscChecker {
                     pos: Position {
                         filename: filename.clone(),
                         line: (i + 1) as u64,
-                        column: Some(code.len() as u64 ),
+                        column: Some(code.len() as u64),
                     },
                     arguments: (vec![code.len().to_string(), max_line_length.to_string()]),
                 })
@@ -86,7 +86,7 @@ impl MiscChecker {
 impl Check for MiscChecker {
     fn check(
         self: &mut MiscChecker,
-        ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
+        ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
     ) {
         self.set_contex(ctx);
         let f = match &self.file {

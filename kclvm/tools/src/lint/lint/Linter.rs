@@ -63,10 +63,13 @@ use kclvm_error::Diagnostic;
 use kclvm_parser::load_program;
 use kclvm_sema::pre_process::pre_process_program;
 use kclvm_sema::resolver::{scope::ProgramScope, Options, Resolver};
+use rustc_span::source_map::FilePathMapping;
 use std::{
+    borrow::Borrow,
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
+    path::Path,
 };
 pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
@@ -133,7 +136,7 @@ impl Linter {
         }
     }
 
-    fn get_ctx(&self, file: &str) -> (Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>) {
+    fn get_ctx(&self, file: &str) -> (String ,Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>) {
         let f = File::open(file).unwrap();
         let reader = BufReader::new(f);
         let mut code_line_list: Vec<String> = vec![];
@@ -143,6 +146,13 @@ impl Linter {
             let line = line.unwrap();
             code_line_list.push(line.clone());
         }
+        // let mut src_code: Vec<&str> = vec![];
+        // let sm = rustc_span::SourceMap::new(FilePathMapping::empty());
+        // if let Ok(source_file) = sm.load_file(Path::new(&file)) {
+        //     if let Some(src) = source_file.src.clone() {
+        //         src_code = src.split("\n").collect();
+        //     }
+        // }
 
         let file_list = vec![file];
         let mut prog = load_program(&file_list, None);
@@ -159,7 +169,7 @@ impl Linter {
         let scope = resolver.check(kclvm_ast::MAIN_PKG);
         resolver.handler.emit();
         let diagnostics = resolver.handler.diagnostics;
-        (code_line_list, prog, scope, diagnostics)
+        (file.to_string(), code_line_list, prog, scope, diagnostics)
     }
 
     pub fn run(&mut self, file: &str) {

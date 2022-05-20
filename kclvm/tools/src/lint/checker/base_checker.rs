@@ -49,7 +49,7 @@ impl BaseChecker {
         let sub_checker = CheckerFacotry::new_checker(kind.clone());
         Self { kind, sub_checker }
     }
-    pub fn check(&mut self, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+    pub fn check(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
         let c = &mut self.sub_checker;
         c.check(ctx)
     }
@@ -67,7 +67,7 @@ impl BaseChecker {
 }
 
 pub trait Check {
-    fn check(&mut self, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>));
+    fn check(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>));
     fn get_msgs(&self) -> Vec<Message>;
     fn get_kind(&self) -> Checker;
 }

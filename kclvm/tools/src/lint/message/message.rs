@@ -35,7 +35,7 @@ impl std::fmt::Display for Message {
         };
         write!(
             f,
-            "{}:{}:{}:{}:{}\n{}\n{}^",
+            "{}:{}:{}: {}: {}\n{}\n{}^",
             self.pos.filename,
             self.pos.line,
             column,

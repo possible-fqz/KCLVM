@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+use std::borrow::{Borrow, BorrowMut};
 use std::path::Path;
 
 use super::super::message::message::{Message, MSG};
@@ -67,27 +67,24 @@ impl ImportChecker {
             diagnostics: None,
         }
     }
-    fn set_contex(&mut self, ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
-        self.code_lines = Some(ctx.0.clone());
-        self.prog = Some(ctx.1.clone());
-        self.scope = Some(ctx.2.clone());
-        self.diagnostics = Some(ctx.3.clone());
+    fn set_contex(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+        self.code_lines = Some(ctx.1.clone());
+        self.prog = Some(ctx.2.clone());
+        self.scope = Some(ctx.3.clone());
+        self.diagnostics = Some(ctx.4.clone());
     }
 
     fn check_unused_import(&mut self, diagnostics: IndexSet<Diagnostic>) {
         for diagnostic in diagnostics {
             if let Some(code_lines) = &self.code_lines {
-                if let Some(msg) =
-                    ImportChecker::diagnostic_to_msg(self, diagnostic)
-                {
-                    println!("{}", msg)
+                if let Some(msg) = ImportChecker::diagnostic_to_msg(self, diagnostic) {
+                    self.msgs.push(msg)
                 }
             }
         }
     }
 
     fn diagnostic_to_msg(&self, diag: Diagnostic) -> Option<Message> {
-        // let line_source = &code_lines[diag.messages[0].pos.line.clone() as usize - 1];
         let sm = rustc_span::SourceMap::new(FilePathMapping::empty());
         let filename = &diag.messages[0].pos.filename;
         let line = diag.messages[0].pos.line.clone() as usize - 1;
@@ -107,34 +104,23 @@ impl ImportChecker {
         if let Some(code) = &diag.code {
             msg = match code {
                 DiagnosticId::Error(kind) => None,
-                DiagnosticId::Warning(kind) => match kind {
-                    UnusedImportWarning => {
-                        Some(Message {
+                DiagnosticId::Warning(kind) => match kind.clone() {
+                    WarningKind::UnusedImportWarning => Some(Message {
                         msg_id: "W0411".to_string(),
                         msg: diag.messages[0].message.clone(),
                         source_code: line_source,
                         pos: pos,
                         arguments: vec![],
-                    })},
-                    ReimportWarning => None,
+                    }),
+                    WarningKind::ReimportWarning => Some(Message {
+                        msg_id: "W0404".to_string(),
+                        msg: diag.messages[0].message.clone(),
+                        source_code: line_source,
+                        pos: pos,
+                        arguments: vec![],
+                    }),
                 },
             };
-            //     match id {
-            //         DiagnosticId::Warning(warning) => match warning {
-            // WarningKind::UnusedImportWaring => Some(Message{
-            //     msg_id: "W0411".to_string(),
-            //     msg: diagnostic.messages[0].message.clone(),
-            //     source_code: line_source.clone(),
-            //     pos: diagnostic.messages[0].pos.clone(),
-            //     arguments: todo!(),
-            // }),
-            //             ReimportWaring => None,
-            //         },
-            //         DiagnosticId::Error(error) => None,
-            //     }
-            // } else {
-            //     None
-            // };
         }
         msg
     }
@@ -143,7 +129,7 @@ impl ImportChecker {
 impl Check for ImportChecker {
     fn check(
         self: &mut ImportChecker,
-        ctx: &(Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
+        ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
     ) {
         self.set_contex(ctx);
         if let Some(diagnostics) = &self.diagnostics {
