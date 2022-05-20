@@ -1,13 +1,13 @@
-use indexmap::IndexSet;
-use kclvm_ast::ast::{Program};
-use kclvm_sema::resolver::scope::ProgramScope;
-use super::imports::{ImportChecker};
-use super::super::message::message::{Message, MSG};
-use super::super::lint::Linter::Linter;
 use super::super::lint::config::Config;
+use super::super::lint::Linter::Linter;
+use super::super::message::message::{Message, MSG};
+use super::imports::ImportChecker;
 use super::misc::MiscChecker;
-use once_cell::sync::Lazy;
+use indexmap::IndexSet;
+use kclvm_ast::ast::Program;
 use kclvm_error::Diagnostic;
+use kclvm_sema::resolver::scope::ProgramScope;
+use once_cell::sync::Lazy;
 
 #[derive(Debug, Clone)]
 pub enum Checker {
@@ -16,8 +16,7 @@ pub enum Checker {
     BasicChecker,
 }
 
-
-pub struct BaseChecker{
+pub struct BaseChecker {
     pub kind: Checker,
     pub sub_checker: Box<dyn Check>,
     // options level (0 will be displaying in --help, 1 in --long-help)
@@ -31,14 +30,13 @@ pub struct BaseChecker{
     // The Linter which Checker belong to
     // pub lint: Linter,
     // ordered list of options to control the checker behaviour
-    // pub options: Config, 
+    // pub options: Config,
 }
 
-
-struct CheckerFacotry{}
-impl CheckerFacotry{
-    pub fn new_checker(checker: Checker) -> Box<dyn Check>{
-        match checker{
+struct CheckerFacotry {}
+impl CheckerFacotry {
+    pub fn new_checker(checker: Checker) -> Box<dyn Check> {
+        match checker {
             Checker::ImportCheck => Box::new(ImportChecker::new()),
             Checker::MiscChecker => Box::new(MiscChecker::new()),
             _ => Box::new(ImportChecker::new()),
@@ -46,8 +44,8 @@ impl CheckerFacotry{
     }
 }
 
-impl BaseChecker{
-    pub fn new(kind: Checker) -> Self{
+impl BaseChecker {
+    pub fn new(kind: Checker) -> Self {
         let sub_checker = CheckerFacotry::new_checker(kind.clone());
         Self { kind, sub_checker }
     }
@@ -55,13 +53,13 @@ impl BaseChecker{
         let c = &mut self.sub_checker;
         c.check(ctx)
     }
-    pub fn get_msgs(&self) -> Vec<Message>{
+    pub fn get_msgs(&self) -> Vec<Message> {
         let c = &self.sub_checker;
         let msgs = c.get_msgs();
         msgs
     }
 
-    pub fn get_kind(&self) -> Checker{
+    pub fn get_kind(&self) -> Checker {
         let c = &self.sub_checker;
         let kind = c.get_kind();
         kind
@@ -73,4 +71,3 @@ pub trait Check {
     fn get_msgs(&self) -> Vec<Message>;
     fn get_kind(&self) -> Checker;
 }
-

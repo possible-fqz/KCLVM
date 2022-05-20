@@ -1,29 +1,27 @@
-use super::stdout_reporter::StdoutReporter;
 use super::super::message::message::{Message, MSG};
+use super::stdout_reporter::StdoutReporter;
 #[derive(Debug)]
-pub enum Reporter{
+pub enum Reporter {
     Stdout,
 }
 
-pub struct BaseReporter{
+pub struct BaseReporter {
     pub kind: Reporter,
     pub sub_reporter: Box<dyn DisplayMsg>,
 }
 
-
-
-struct ReporterFacotry{}
-impl ReporterFacotry{
-    pub fn new_reporter(reporter: &Reporter) -> Box<dyn DisplayMsg>{
-        match reporter{
+struct ReporterFacotry {}
+impl ReporterFacotry {
+    pub fn new_reporter(reporter: &Reporter) -> Box<dyn DisplayMsg> {
+        match reporter {
             Stdout => Box::new(StdoutReporter::new()),
             _ => Box::new(StdoutReporter::new()),
         }
     }
 }
 
-impl BaseReporter{
-    pub fn new(kind: Reporter) -> Self{
+impl BaseReporter {
+    pub fn new(kind: Reporter) -> Self {
         let sub_reporter = ReporterFacotry::new_reporter(&kind);
         Self { kind, sub_reporter }
     }
@@ -35,4 +33,3 @@ impl BaseReporter{
 pub trait DisplayMsg {
     fn print_msg(&self, msgs: &Vec<Message>);
 }
-

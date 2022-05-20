@@ -1,8 +1,7 @@
-
-use kclvm_tools::lint::lint::Linter::Linter;
-use kclvm_sema::resolver::{resolve_program, scope::ProgramScope, Options, Resolver};
 use kclvm_parser::load_program;
 use kclvm_sema::pre_process::pre_process_program;
+use kclvm_sema::resolver::{resolve_program, scope::ProgramScope, Options, Resolver};
+use kclvm_tools::lint::lint::Linter::Linter;
 
 fn main() {
     // for entry in WalkDir::new("/Users/zz/code/test/rusr_test/src") {
@@ -16,7 +15,6 @@ fn main() {
 
     // let scope = resolve_program(&mut prog);
 
-
     // pre_process_program(&mut prog);
     // let mut resolver = Resolver::new(
     //     &prog,
@@ -28,7 +26,6 @@ fn main() {
     // resolver.resolve_import();
     // let scope = resolver.check(kclvm_ast::MAIN_PKG);
     // resolver.handler.emit();
-
 
     println!("------");
     lint.run(&file);

@@ -105,7 +105,7 @@ impl<'ctx> Resolver<'ctx> {
                                             if let Some(module_scope) = scope.lookup(&import_stmt.path) {
                                                 let module = module_scope.borrow();
                                                 self.handler.add_warning(
-                                                    WarningKind::ReimportWaring,
+                                                    WarningKind::ReimportWarning,
                                                     &[Message {
                                                         pos: module.start.clone(),
                                                         style: Style::Line,
@@ -248,7 +248,7 @@ impl<'ctx> Resolver<'ctx> {
                         TypeKind::Module(ModuleTye) => {
                             if !obj.used{
                                 self.handler.add_warning(
-                                    WarningKind::UnusedImportWaring,
+                                    WarningKind::UnusedImportWarning,
                                     &[Message {
                                         pos: obj.start.clone(),
                                         style: Style::Line,

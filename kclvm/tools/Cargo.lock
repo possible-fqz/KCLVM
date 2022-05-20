@@ -549,6 +549,7 @@ dependencies = [
  "kclvm-sema",
  "once_cell",
  "pretty_assertions",
+ "rustc_span",
  "walkdir",
 ]
 

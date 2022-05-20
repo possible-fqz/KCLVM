@@ -1,5 +1,5 @@
 use super::super::checker::base_checker::Checker;
-pub struct Config{
+pub struct Config {
     check_list: Vec<Checker>,
     ignore: Vec<String>,
     max_line_length: u32,
@@ -24,9 +24,13 @@ pub struct Config{
     bad_names: Vec<String>,
 }
 impl Config {
-    pub fn DEFAULT_CONFIG() -> Config{
-        Self { 
-            check_list: vec![Checker::ImportCheck, Checker::BasicChecker, Checker::MiscChecker],
+    pub fn DEFAULT_CONFIG() -> Config {
+        Self {
+            check_list: vec![
+                Checker::ImportCheck,
+                Checker::BasicChecker,
+                Checker::MiscChecker,
+            ],
             ignore: vec![],
             max_line_length: 200,
             output: vec![String::from("stdout")],
@@ -56,14 +60,13 @@ impl Config {
                 String::from("I"),
                 String::from("l"),
                 String::from("O"),
-            ]
+            ],
         }
     }
-    pub fn update(&mut self){
+    pub fn update(&mut self) {
         // todo
     }
 }
-
 
 // pub DEFAULT_CONFIG: Config = Config {
 //     check_list: vec![Checker::ImportCheck, Checker::BasicChecker, Checker::MiscChecker],
