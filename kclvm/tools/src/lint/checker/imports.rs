@@ -1,13 +1,15 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::path::Path;
 
+use crate::lint::lint::config::Config;
+
 use super::super::message::message::{Message, MSG};
 use super::base_checker::{Check, CheckerKind};
-use indexmap::{IndexSet, IndexMap};
+use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{Module, Program};
 use kclvm_ast::token::LitKind::Integer;
-use kclvm_error::{Position, ErrorKind};
 use kclvm_error::{Diagnostic, DiagnosticId, WarningKind};
+use kclvm_error::{ErrorKind, Position};
 use kclvm_sema::resolver::scope::ProgramScope;
 use once_cell::sync::Lazy;
 use rustc_span::source_map::FilePathMapping;
@@ -21,7 +23,6 @@ pub const IMPORT_POSITION_CHECK_LIST: [&str; 7] = [
     "SchemaStmt",
     "RuleStmt",
 ];
-
 
 pub const IMPORT_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
@@ -78,7 +79,16 @@ impl ImportChecker {
             diagnostics: None,
         }
     }
-    fn set_contex(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+    fn set_contex(
+        &mut self,
+        ctx: &(
+            String,
+            Vec<String>,
+            Program,
+            ProgramScope,
+            IndexSet<Diagnostic>,
+        ),
+    ) {
         self.code_lines = Some(ctx.1.clone());
         self.prog = Some(ctx.2.clone());
         self.scope = Some(ctx.3.clone());
@@ -115,12 +125,12 @@ impl ImportChecker {
         if let Some(id) = &diag.code {
             msg = match id {
                 DiagnosticId::Error(kind) => match kind {
-                    ErrorKind:: CannotFindModule => Some(Message{
+                    ErrorKind::CannotFindModule => Some(Message {
                         msg_id: "E0401".to_string(),
                         msg: diag.messages[0].message.clone(),
                         source_code: line_source,
                         pos: pos,
-                        arguments: vec![],
+                        arguments: diag.args.clone(),
                     }),
                     _ => None,
                 },
@@ -130,14 +140,14 @@ impl ImportChecker {
                         msg: diag.messages[0].message.clone(),
                         source_code: line_source,
                         pos: pos,
-                        arguments: vec![],
+                        arguments: diag.args.clone(),
                     }),
                     WarningKind::ReimportWarning => Some(Message {
                         msg_id: "W0404".to_string(),
                         msg: diag.messages[0].message.clone(),
                         source_code: line_source,
                         pos: pos,
-                        arguments: vec![],
+                        arguments: diag.args.clone(),
                     }),
                 },
             };
@@ -149,7 +159,14 @@ impl ImportChecker {
 impl Check for ImportChecker {
     fn check(
         self: &mut ImportChecker,
-        ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
+        ctx: &(
+            String,
+            Vec<String>,
+            Program,
+            ProgramScope,
+            IndexSet<Diagnostic>,
+        ),
+        cfg: &Config,
     ) {
         self.set_contex(ctx);
         if let Some(diagnostics) = &self.diagnostics {

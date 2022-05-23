@@ -1,3 +1,5 @@
+use crate::lint::lint::config::Config;
+
 use super::super::message::message::{Message, MSG};
 use super::base_checker::Check;
 use super::base_checker::CheckerKind;
@@ -29,7 +31,6 @@ pub struct MiscChecker {
     MSGS: IndexMap<String, MSG>,
     msgs: IndexSet<Message>,
     file: Option<String>,
-    module: Option<Module>,
     code_lines: Option<Vec<String>>,
     prog: Option<Program>,
     scope: Option<ProgramScope>,
@@ -43,7 +44,6 @@ impl MiscChecker {
             MSGS: MISC_MSGS.clone(),
             msgs: IndexSet::new(),
             file: None,
-            module: None,
             code_lines: None,
             prog: None,
             scope: None,
@@ -51,7 +51,16 @@ impl MiscChecker {
         }
     }
 
-    fn set_contex(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+    fn set_contex(
+        &mut self,
+        ctx: &(
+            String,
+            Vec<String>,
+            Program,
+            ProgramScope,
+            IndexSet<Diagnostic>,
+        ),
+    ) {
         self.file = Some(ctx.0.clone());
         self.code_lines = Some(ctx.1.clone());
         self.prog = Some(ctx.2.clone());
@@ -59,11 +68,14 @@ impl MiscChecker {
         self.diagnostics = Some(ctx.4.clone());
     }
 
-    fn check_line_too_long(&mut self, filename: String, code_lines: Vec<String>) {
-        // let code_lines: Vec<&str> = code.split("\n").collect();
-        let max_line_length = 50;
+    fn check_line_too_long(
+        &mut self,
+        filename: String,
+        code_lines: Vec<String>,
+        max_line_length: &usize,
+    ) {
         for (i, code) in code_lines.iter().enumerate() {
-            if code.len() > max_line_length {
+            if code.len() > *max_line_length {
                 self.msgs.insert(Message {
                     msg_id: String::from("E0501"),
                     msg: format!(
@@ -87,7 +99,14 @@ impl MiscChecker {
 impl Check for MiscChecker {
     fn check(
         self: &mut MiscChecker,
-        ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>),
+        ctx: &(
+            String,
+            Vec<String>,
+            Program,
+            ProgramScope,
+            IndexSet<Diagnostic>,
+        ),
+        cfg: &Config,
     ) {
         self.set_contex(ctx);
         let f = match &self.file {
@@ -98,7 +117,7 @@ impl Check for MiscChecker {
             Some(codes) => codes.clone(),
             _ => vec!["".to_string()],
         };
-        self.check_line_too_long(f, code_line)
+        self.check_line_too_long(f, code_line, &cfg.max_line_length);
     }
 
     fn get_msgs(self: &MiscChecker) -> IndexSet<Message> {

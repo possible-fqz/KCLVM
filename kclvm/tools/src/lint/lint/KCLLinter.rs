@@ -74,6 +74,7 @@ use std::{
 pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
 use once_cell::sync::Lazy;
+use std::fs;
 
 pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
@@ -90,28 +91,54 @@ pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
 });
 
 pub struct Linter {
-    path: Option<String>,
-    file_list: IndexSet<String>,
-    checkers: Vec<BaseChecker>,
-    reporters: Vec<BaseReporter>,
-    config: Config,
-    msgs: IndexSet<Message>,
-    MSGS: IndexMap<String, MSG>,
-    msgs_map: HashMap<String, u32>,
+    pub path: String,
+    pub file_list: IndexSet<String>,
+    pub checkers: Vec<BaseChecker>,
+    pub reporters: Vec<BaseReporter>,
+    pub config: Config,
+    pub msgs: IndexSet<Message>,
+    pub MSGS: IndexMap<String, MSG>,
+    pub msgs_map: HashMap<String, u32>,
 }
 
 impl Linter {
-    pub fn new() -> Self {
+    pub fn new(paths: &String, config: Option<Config>) -> Self {
+        let mut filelist: IndexSet<String> = IndexSet::new();
+        let meta = std::fs::symlink_metadata(&paths);
+        let file_type = meta.unwrap().file_type();
+        if file_type.is_dir() {
+            let ps = fs::read_dir(&paths).unwrap();
+            for path in ps {
+                if let Some(filepath) = path.unwrap().path().to_str() {
+                    if filepath.ends_with(".k") {
+                        filelist.insert(filepath.to_string());
+                        println!("{}", filepath);
+                    }
+                }
+            }
+        } else {
+            filelist.insert(paths.clone());
+        }
+
         Self {
-            path: None,
-            file_list: IndexSet::new(),
+            path: paths.clone(),
+            file_list: filelist,
             checkers: vec![],
             reporters: vec![],
-            config: Config::DEFAULT_CONFIG(),
+            config: Linter::load_config(config),
             msgs: IndexSet::new(),
             MSGS: LINTER_MSGS.clone(),
             msgs_map: HashMap::new(),
         }
+    }
+
+    fn load_config(config: Option<Config>) -> Config {
+        let mut cfg = Config::DEFAULT_CONFIG();
+        match config {
+            Some(config) => cfg.update(config),
+            None => {}
+        }
+        cfg
     }
 
     fn reset(&mut self) {
@@ -126,7 +153,7 @@ impl Linter {
         for c in checkers {
             let checker = BaseChecker::new(c.clone());
             let MSGS = checker.get_MSGS();
-            for (id, M) in MSGS{
+            for (id, M) in MSGS {
                 self.MSGS.insert(id, M);
             }
             self.checkers.push(checker);
@@ -140,23 +167,23 @@ impl Linter {
         }
     }
 
-    fn get_ctx(&self, file: &str) -> (String ,Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>) {
+    fn get_ctx(
+        &self,
+        file: &str,
+    ) -> (
+        String,
+        Vec<String>,
+        Program,
+        ProgramScope,
+        IndexSet<Diagnostic>,
+    ) {
         let f = File::open(file).unwrap();
         let reader = BufReader::new(f);
         let mut code_line_list: Vec<String> = vec![];
         for line in reader.lines() {
-            // line 是 std::result::Result<std::string::String, std::io::Error> 类型
-            // line 不包含换行符
             let line = line.unwrap();
             code_line_list.push(line.clone());
         }
-        // let mut src_code: Vec<&str> = vec![];
-        // let sm = rustc_span::SourceMap::new(FilePathMapping::empty());
-        // if let Ok(source_file) = sm.load_file(Path::new(&file)) {
-        //     if let Some(src) = source_file.src.clone() {
-        //         src_code = src.split("\n").collect();
-        //     }
-        // }
 
         let file_list = vec![file];
         let mut prog = load_program(&file_list, None);
@@ -176,35 +203,30 @@ impl Linter {
         (file.to_string(), code_line_list, prog, scope, diagnostics)
     }
 
-    pub fn run(&mut self, file: &str) {
+    pub fn run(&mut self) {
+        self.reset();
         self.register_checkers(vec![ImportCheck, MiscChecker]);
         self.register_reporters(vec![ReporterKind::Stdout]);
-        let ctx = self.get_ctx(file);
-        for c in &mut self.checkers {
-            c.check(&ctx);
-            let msgs = c.get_msgs();
-            // collect lint error
-            for m in &msgs {
-                self.msgs.insert(m.clone());
-                let id = m.msg_id.clone();
-                match self.msgs_map.get_mut(&id){
-                    Some(v) => {*v += 1 as u32},
-                    None => {self.msgs_map.insert(id, 1 as u32);},
-
+        for file in &self.file_list {
+            let ctx = self.get_ctx(file);
+            for c in &mut self.checkers {
+                c.check(&ctx, &self.config);
+                let msgs = c.get_msgs();
+                // collect lint msgs
+                for m in &msgs {
+                    self.msgs.insert(m.clone());
+                    let id = m.msg_id.clone();
+                    match self.msgs_map.get_mut(&id) {
+                        Some(v) => *v += 1 as u32,
+                        None => {
+                            self.msgs_map.insert(id, 1 as u32);
+                        }
+                    }
                 }
-
-
-                // if msg in self.msgs{
-                //     self.msgs.append(msg);
-                //     self.msgs_map[msg.msg_id] = (
-                //         self.msgs_map.setdefault(msg.msg_id, 0) + 1
-                //     )
-                // }
-
             }
         }
         for r in &self.reporters {
-            r.print_msg(&self.msgs, &self.msgs_map, self.MSGS.clone());
+            r.print_msg(&self);
         }
     }
 }
