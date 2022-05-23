@@ -47,11 +47,11 @@
 // └─────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 use super::super::checker::base_checker::{
-    BaseChecker, Checker,
-    Checker::{ImportCheck, MiscChecker},
+    BaseChecker, CheckerKind,
+    CheckerKind::{ImportCheck, MiscChecker},
 };
 use super::config::Config;
-use crate::lint::reporter::base_reporter::Reporter;
+use crate::lint::reporter::base_reporter::ReporterKind;
 use crate::lint::{
     checker::imports::{ImportChecker, IMPORT_MSGS},
     message::message::{Message, MSG},
@@ -91,11 +91,11 @@ pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
 
 pub struct Linter {
     path: Option<String>,
-    file_list: Vec<String>,
+    file_list: IndexSet<String>,
     checkers: Vec<BaseChecker>,
     reporters: Vec<BaseReporter>,
     config: Config,
-    msgs: Vec<Message>,
+    msgs: IndexSet<Message>,
     MSGS: IndexMap<String, MSG>,
     msgs_map: HashMap<String, u32>,
 }
@@ -104,11 +104,11 @@ impl Linter {
     pub fn new() -> Self {
         Self {
             path: None,
-            file_list: vec![],
+            file_list: IndexSet::new(),
             checkers: vec![],
             reporters: vec![],
             config: Config::DEFAULT_CONFIG(),
-            msgs: vec![],
+            msgs: IndexSet::new(),
             MSGS: LINTER_MSGS.clone(),
             msgs_map: HashMap::new(),
         }
@@ -118,18 +118,22 @@ impl Linter {
         self.reporters = vec![];
         self.checkers = vec![];
         self.MSGS = LINTER_MSGS.clone();
-        self.msgs = vec![];
+        self.msgs = IndexSet::new();
         self.msgs_map = HashMap::new();
     }
 
-    fn register_checkers(&mut self, checkers: Vec<Checker>) {
+    fn register_checkers(&mut self, checkers: Vec<CheckerKind>) {
         for c in checkers {
-            let checker = BaseChecker::new(c);
+            let checker = BaseChecker::new(c.clone());
+            let MSGS = checker.get_MSGS();
+            for (id, M) in MSGS{
+                self.MSGS.insert(id, M);
+            }
             self.checkers.push(checker);
         }
     }
 
-    fn register_reporters(&mut self, reporters: Vec<Reporter>) {
+    fn register_reporters(&mut self, reporters: Vec<ReporterKind>) {
         for r in reporters {
             let reporter = BaseReporter::new(r);
             self.reporters.push(reporter);
@@ -174,18 +178,33 @@ impl Linter {
 
     pub fn run(&mut self, file: &str) {
         self.register_checkers(vec![ImportCheck, MiscChecker]);
-        self.register_reporters(vec![Reporter::Stdout]);
+        self.register_reporters(vec![ReporterKind::Stdout]);
         let ctx = self.get_ctx(file);
         for c in &mut self.checkers {
             c.check(&ctx);
             let msgs = c.get_msgs();
             // collect lint error
-            for m in msgs {
-                self.msgs.push(m)
+            for m in &msgs {
+                self.msgs.insert(m.clone());
+                let id = m.msg_id.clone();
+                match self.msgs_map.get_mut(&id){
+                    Some(v) => {*v += 1 as u32},
+                    None => {self.msgs_map.insert(id, 1 as u32);},
+
+                }
+
+
+                // if msg in self.msgs{
+                //     self.msgs.append(msg);
+                //     self.msgs_map[msg.msg_id] = (
+                //         self.msgs_map.setdefault(msg.msg_id, 0) + 1
+                //     )
+                // }
+
             }
         }
         for r in &self.reporters {
-            r.print_msg(&self.msgs);
+            r.print_msg(&self.msgs, &self.msgs_map, self.MSGS.clone());
         }
     }
 }

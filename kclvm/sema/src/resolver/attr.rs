@@ -19,6 +19,7 @@ impl<'ctx> Resolver<'ctx> {
                     message: format!("type '{}'", attr_ty.ty_str()),
                     note: None,
                 }],
+                &[attr_ty.ty_str()],
             );
         }
     }

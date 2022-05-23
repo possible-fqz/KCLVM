@@ -1,6 +1,6 @@
 use kclvm_error::Position;
 
-#[derive(Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Message {
     pub msg_id: String,
     pub msg: String,
@@ -45,15 +45,9 @@ impl std::fmt::Display for Message {
             " ".repeat(column - 1)
         )
     }
-
-    // let s = format!("{}:{}:{}:{}:{}\n{}\n{}\n^",
-    // msg.file, msg.pos.0, msg.pos.1, msg.msg_id, msg.msg,
-    // msg.source_code,
-    // " ".repeat(msg.pos.1 as usize - 1));
-    // s
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct MSG {
     pub id: String,
     pub short_info: String,

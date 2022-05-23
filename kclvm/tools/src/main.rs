@@ -1,7 +1,7 @@
 use kclvm_parser::load_program;
 use kclvm_sema::pre_process::pre_process_program;
 use kclvm_sema::resolver::{resolve_program, scope::ProgramScope, Options, Resolver};
-use kclvm_tools::lint::lint::Linter::Linter;
+use kclvm_tools::lint::lint::KCLLinter::Linter;
 
 fn main() {
     // for entry in WalkDir::new("/Users/zz/code/test/rusr_test/src") {

@@ -1,2 +1,2 @@
-pub mod Linter;
+pub mod KCLLinter;
 pub mod config;

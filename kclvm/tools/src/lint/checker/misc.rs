@@ -1,6 +1,6 @@
 use super::super::message::message::{Message, MSG};
 use super::base_checker::Check;
-use super::base_checker::Checker;
+use super::base_checker::CheckerKind;
 use indexmap::{IndexMap, IndexSet};
 use kclvm_ast::ast::{Module, Program};
 use kclvm_error::Diagnostic;
@@ -12,7 +12,7 @@ use std::{fs::File, io::BufReader};
 pub const MISC_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
     mapping.insert(
-        "E0501".to_string(),
+        String::from("E0501"),
         MSG {
             id: String::from("E0501"),
             short_info: String::from("Line too long."),
@@ -23,10 +23,11 @@ pub const MISC_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     mapping
 });
 
+#[derive(Debug, Clone)]
 pub struct MiscChecker {
-    kind: Checker,
+    kind: CheckerKind,
     MSGS: IndexMap<String, MSG>,
-    msgs: Vec<Message>,
+    msgs: IndexSet<Message>,
     file: Option<String>,
     module: Option<Module>,
     code_lines: Option<Vec<String>>,
@@ -38,9 +39,9 @@ pub struct MiscChecker {
 impl MiscChecker {
     pub fn new() -> Self {
         Self {
-            kind: Checker::MiscChecker,
+            kind: CheckerKind::MiscChecker,
             MSGS: MISC_MSGS.clone(),
-            msgs: vec![],
+            msgs: IndexSet::new(),
             file: None,
             module: None,
             code_lines: None,
@@ -51,11 +52,11 @@ impl MiscChecker {
     }
 
     fn set_contex(&mut self, ctx: &(String, Vec<String>, Program, ProgramScope, IndexSet<Diagnostic>)) {
+        self.file = Some(ctx.0.clone());
         self.code_lines = Some(ctx.1.clone());
         self.prog = Some(ctx.2.clone());
         self.scope = Some(ctx.3.clone());
         self.diagnostics = Some(ctx.4.clone());
-        self.file = Some(ctx.0.clone());
     }
 
     fn check_line_too_long(&mut self, filename: String, code_lines: Vec<String>) {
@@ -63,8 +64,8 @@ impl MiscChecker {
         let max_line_length = 50;
         for (i, code) in code_lines.iter().enumerate() {
             if code.len() > max_line_length {
-                self.msgs.push(Message {
-                    msg_id: "E0501".to_string(),
+                self.msgs.insert(Message {
+                    msg_id: String::from("E0501"),
                     msg: format!(
                         "Line too long ({} > {} characters).",
                         code.len(),
@@ -77,7 +78,7 @@ impl MiscChecker {
                         column: Some(code.len() as u64),
                     },
                     arguments: (vec![code.len().to_string(), max_line_length.to_string()]),
-                })
+                });
             }
         }
     }
@@ -100,11 +101,16 @@ impl Check for MiscChecker {
         self.check_line_too_long(f, code_line)
     }
 
-    fn get_msgs(self: &MiscChecker) -> Vec<Message> {
+    fn get_msgs(self: &MiscChecker) -> IndexSet<Message> {
         let msgs = &self.msgs;
-        msgs.to_vec()
+        msgs.clone()
     }
-    fn get_kind(self: &MiscChecker) -> Checker {
+
+    fn get_MSGS(self: &MiscChecker) -> IndexMap<String, MSG> {
+        self.MSGS.clone()
+    }
+
+    fn get_kind(self: &MiscChecker) -> CheckerKind {
         let kind = self.kind.clone();
         kind
     }

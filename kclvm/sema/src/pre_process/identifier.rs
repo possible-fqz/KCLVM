@@ -41,6 +41,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &[String::from(name)],
             );
         }
         walk_list_mut!(self, walk_identifier, rule_stmt.parent_rules);
@@ -75,6 +76,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &[String::from(name)],
             );
         }
         walk_if_mut!(self, walk_identifier, schema_stmt.parent_name);
@@ -116,6 +118,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                             note: None,
                         },
                     ],
+                    &[String::from(name)],
                 );
             }
         }
@@ -149,6 +152,7 @@ impl<'ctx> MutSelfMutWalker<'ctx> for QualifiedIdentifierTransformer {
                         note: None,
                     },
                 ],
+                &[String::from(name)],
             );
         }
 

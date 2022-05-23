@@ -1,6 +1,6 @@
-use super::super::checker::base_checker::Checker;
+use super::super::checker::base_checker::CheckerKind;
 pub struct Config {
-    check_list: Vec<Checker>,
+    check_list: Vec<CheckerKind>,
     ignore: Vec<String>,
     max_line_length: u32,
     output: Vec<String>,
@@ -27,9 +27,9 @@ impl Config {
     pub fn DEFAULT_CONFIG() -> Config {
         Self {
             check_list: vec![
-                Checker::ImportCheck,
-                Checker::BasicChecker,
-                Checker::MiscChecker,
+                CheckerKind::ImportCheck,
+                CheckerKind::BasicChecker,
+                CheckerKind::MiscChecker,
             ],
             ignore: vec![],
             max_line_length: 200,

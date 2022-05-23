@@ -2,11 +2,11 @@ use std::borrow::{Borrow, BorrowMut};
 use std::path::Path;
 
 use super::super::message::message::{Message, MSG};
-use super::base_checker::{Check, Checker};
-use indexmap::IndexSet;
+use super::base_checker::{Check, CheckerKind};
+use indexmap::{IndexSet, IndexMap};
 use kclvm_ast::ast::{Module, Program};
 use kclvm_ast::token::LitKind::Integer;
-use kclvm_error::Position;
+use kclvm_error::{Position, ErrorKind};
 use kclvm_error::{Diagnostic, DiagnosticId, WarningKind};
 use kclvm_sema::resolver::scope::ProgramScope;
 use once_cell::sync::Lazy;
@@ -22,33 +22,44 @@ pub const IMPORT_POSITION_CHECK_LIST: [&str; 7] = [
     "RuleStmt",
 ];
 
-pub const IMPORT_MSGS: Lazy<Vec<MSG>> = Lazy::new(|| {
-    vec![
+
+pub const IMPORT_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
+    let mut mapping = IndexMap::default();
+    mapping.insert(
+        String::from("E0401"),
         MSG {
             id: String::from("E0401"),
             short_info: String::from("Unable to import."),
             long_info: String::from("Unable to import {}."),
             sarif_info: String::from("Unable to import {0}."),
         },
+    );
+    mapping.insert(
+        String::from("W0404"),
         MSG {
-            id: String::from("E0404"),
+            id: String::from("W0404"),
             short_info: String::from("Module reimported."),
             long_info: String::from("{} is reimported multiple times."),
             sarif_info: String::from("{0} is reimported multiple times."),
         },
+    );
+    mapping.insert(
+        String::from("W0411"),
         MSG {
             id: String::from("W0411"),
             short_info: String::from("Module imported but unused."),
             long_info: String::from("{} is imported but unused."),
             sarif_info: String::from("{0} is imported but unused."),
         },
-    ]
+    );
+    mapping
 });
 
+#[derive(Debug, Clone)]
 pub struct ImportChecker {
-    kind: Checker,
-    MSGS: Vec<MSG>,
-    msgs: Vec<Message>,
+    kind: CheckerKind,
+    MSGS: IndexMap<String, MSG>,
+    msgs: IndexSet<Message>,
     code_lines: Option<Vec<String>>,
     prog: Option<Program>,
     scope: Option<ProgramScope>,
@@ -58,9 +69,9 @@ pub struct ImportChecker {
 impl ImportChecker {
     pub fn new() -> Self {
         Self {
-            kind: Checker::ImportCheck,
-            MSGS: IMPORT_MSGS.to_vec(),
-            msgs: vec![],
+            kind: CheckerKind::ImportCheck,
+            MSGS: IMPORT_MSGS.clone(),
+            msgs: IndexSet::new(),
             prog: None,
             code_lines: None,
             scope: None,
@@ -74,11 +85,11 @@ impl ImportChecker {
         self.diagnostics = Some(ctx.4.clone());
     }
 
-    fn check_unused_import(&mut self, diagnostics: IndexSet<Diagnostic>) {
+    fn check_importstmt(&mut self, diagnostics: IndexSet<Diagnostic>) {
         for diagnostic in diagnostics {
             if let Some(code_lines) = &self.code_lines {
                 if let Some(msg) = ImportChecker::diagnostic_to_msg(self, diagnostic) {
-                    self.msgs.push(msg)
+                    self.msgs.insert(msg);
                 }
             }
         }
@@ -101,10 +112,19 @@ impl ImportChecker {
             Some(col) => Some(col + 1),
             None => Some(1),
         };
-        if let Some(code) = &diag.code {
-            msg = match code {
-                DiagnosticId::Error(kind) => None,
-                DiagnosticId::Warning(kind) => match kind.clone() {
+        if let Some(id) = &diag.code {
+            msg = match id {
+                DiagnosticId::Error(kind) => match kind {
+                    ErrorKind:: CannotFindModule => Some(Message{
+                        msg_id: "E0401".to_string(),
+                        msg: diag.messages[0].message.clone(),
+                        source_code: line_source,
+                        pos: pos,
+                        arguments: vec![],
+                    }),
+                    _ => None,
+                },
+                DiagnosticId::Warning(kind) => match kind {
                     WarningKind::UnusedImportWarning => Some(Message {
                         msg_id: "W0411".to_string(),
                         msg: diag.messages[0].message.clone(),
@@ -133,15 +153,19 @@ impl Check for ImportChecker {
     ) {
         self.set_contex(ctx);
         if let Some(diagnostics) = &self.diagnostics {
-            self.check_unused_import(diagnostics.clone());
+            self.check_importstmt(diagnostics.clone());
         }
     }
 
-    fn get_msgs(self: &ImportChecker) -> Vec<Message> {
+    fn get_msgs(self: &ImportChecker) -> IndexSet<Message> {
         self.msgs.clone()
     }
 
-    fn get_kind(self: &ImportChecker) -> Checker {
+    fn get_MSGS(self: &ImportChecker) -> IndexMap<String, MSG> {
+        self.MSGS.clone()
+    }
+
+    fn get_kind(self: &ImportChecker) -> CheckerKind {
         self.kind.clone()
     }
 }

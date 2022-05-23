@@ -171,22 +171,24 @@ impl Handler {
     ///     }
     /// ]);
     /// ```
-    pub fn add_error(&mut self, err: ErrorKind, msgs: &[Message]) -> &mut Self {
+    pub fn add_error(&mut self, err: ErrorKind, msgs: &[Message], args: &[String]) -> &mut Self {
         let diag = Diagnostic {
             level: Level::Error,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Error(err)),
+            args: args.to_owned(),
         };
         self.add_diagnostic(diag);
 
         self
     }
 
-    pub fn add_warning(&mut self, warning: WarningKind, msgs: &[Message]) -> &mut Self {
+    pub fn add_warning(&mut self, warning: WarningKind, msgs: &[Message], args: &[String]) -> &mut Self {
         let diag = Diagnostic {
             level: Level::Warning,
             messages: msgs.to_owned(),
             code: Some(DiagnosticId::Warning(warning)),
+            args: args.to_owned(),
         };
         self.add_diagnostic(diag);
 
