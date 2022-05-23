@@ -2,10 +2,10 @@
 
 // The workflow of KCLLinter is as follows:
 // 1. Load config.
-// 2. Find all KCL files under the 'path' from CLI arguments, and parse them to ast.Program.
+// 2. Find all KCL files under the 'path' from CLI arguments, and get them context, i.e., source code, ast, scope, reslove diagnostic
 // 3. Register checker and reporter according to config
-// 4. Distribute ast to each checker for checking, and generate Message，which represents the result of check.
-// 5. Linter collects Messages from all checkers.
+// 4. Distribute context to each checker for checking, and generate Message，which represents the result of check.
+// 5. Linter collects Messages from all checkers, and count the number.
 // 6. Distribute Message to each reporter as output
 // ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 // │                                   KCLLinter                                                                 │
@@ -14,9 +14,9 @@
 // │      │  KCL file │                  │                             Checker                             │     │
 // │      └───────────┘                  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │     │
 // │            ↓                        │  │  importChecker  │  │  schemaChecker  │  │       ...       │  │     │
-// │      ┌───────────┐                  │  │  ┌───────────┐  │  │  ┌───────────┐  │  │  ┌───────────┐  │  │     │
-// │      │  ast.Prog │       →          │  │  │  Message  │  │  │  │  Message  │  │  │  │  Message  │  │  │     │
-// │      └───────────┘                  │  │  └───────────┘  │  │  └───────────┘  │  │  └───────────┘  │  │     │
+// │      ┌─────────------──┐            │  │  ┌───────────┐  │  │  ┌───────────┐  │  │  ┌───────────┐  │  │     │
+// │      │  ast.Prog/scope │   →        │  │  │  Message  │  │  │  │  Message  │  │  │  │  Message  │  │  │     │
+// │      └───────────------┘            │  │  └───────────┘  │  │  └───────────┘  │  │  └───────────┘  │  │     │
 // │                                     │  │  ┌───────────┐  │  │  ┌───────────┐  │  │  ┌───────────┐  │  │     │
 // │                                     │  │  │  Message  │  │  │  │  Message  │  │  │  │  Message  │  │  │     │
 // │                                     │  │  └───────────┘  │  │  └───────────┘  │  │  └───────────┘  │  │     │
@@ -53,7 +53,6 @@ use super::super::checker::base_checker::{
 use super::config::Config;
 use crate::lint::reporter::base_reporter::ReporterKind;
 use crate::lint::{
-    checker::imports::{ImportChecker, IMPORT_MSGS},
     message::message::{Message, MSG},
     reporter::base_reporter::BaseReporter,
 };
@@ -63,19 +62,15 @@ use kclvm_error::Diagnostic;
 use kclvm_parser::load_program;
 use kclvm_sema::pre_process::pre_process_program;
 use kclvm_sema::resolver::{scope::ProgramScope, Options, Resolver};
-use rustc_span::source_map::FilePathMapping;
 use std::{
-    borrow::Borrow,
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
-    path::Path,
 };
 pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
 use once_cell::sync::Lazy;
-use std::fs;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::{WalkDir};
 
 pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
@@ -105,21 +100,6 @@ pub struct Linter {
 impl Linter {
     pub fn new(paths: &String, config: Option<Config>) -> Self {
         let mut file_list: IndexSet<String> = IndexSet::new();
-        // let meta = std::fs::symlink_metadata(&paths);
-        // let file_type = meta.unwrap().file_type();
-        // if file_type.is_dir() {
-        //     let ps = fs::read_dir(&paths).unwrap();
-        //     for path in ps {
-        //         if let Some(filepath) = path.unwrap().path().to_str() {
-        //             if filepath.ends_with(".k") {
-        //                 filelist.insert(filepath.to_string());
-        //                 println!("{}", filepath);
-        //             }
-        //         }
-        //     }
-        // } else {
-        //     filelist.insert(paths.clone());
-        // }
         for entry in WalkDir::new(paths) {
             let entry = entry.unwrap();
             if entry.file_type().is_dir() {
