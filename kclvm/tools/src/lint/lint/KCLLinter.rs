@@ -75,6 +75,7 @@ pub const LINT_CONFIG_SUFFIX: &str = ".kcllint";
 pub const PARSE_FAILED_MSG_ID: &str = "E0999";
 use once_cell::sync::Lazy;
 use std::fs;
+use walkdir::{DirEntry, WalkDir};
 
 pub const LINTER_MSGS: Lazy<IndexMap<String, MSG>> = Lazy::new(|| {
     let mut mapping = IndexMap::default();
@@ -103,26 +104,35 @@ pub struct Linter {
 
 impl Linter {
     pub fn new(paths: &String, config: Option<Config>) -> Self {
-        let mut filelist: IndexSet<String> = IndexSet::new();
-        let meta = std::fs::symlink_metadata(&paths);
-        let file_type = meta.unwrap().file_type();
-        if file_type.is_dir() {
-            let ps = fs::read_dir(&paths).unwrap();
-            for path in ps {
-                if let Some(filepath) = path.unwrap().path().to_str() {
-                    if filepath.ends_with(".k") {
-                        filelist.insert(filepath.to_string());
-                        println!("{}", filepath);
-                    }
-                }
+        let mut file_list: IndexSet<String> = IndexSet::new();
+        // let meta = std::fs::symlink_metadata(&paths);
+        // let file_type = meta.unwrap().file_type();
+        // if file_type.is_dir() {
+        //     let ps = fs::read_dir(&paths).unwrap();
+        //     for path in ps {
+        //         if let Some(filepath) = path.unwrap().path().to_str() {
+        //             if filepath.ends_with(".k") {
+        //                 filelist.insert(filepath.to_string());
+        //                 println!("{}", filepath);
+        //             }
+        //         }
+        //     }
+        // } else {
+        //     filelist.insert(paths.clone());
+        // }
+        for entry in WalkDir::new(paths) {
+            let entry = entry.unwrap();
+            if entry.file_type().is_dir() {
+            continue;
             }
-        } else {
-            filelist.insert(paths.clone());
+            if entry.path().to_str().unwrap().ends_with(".k"){
+                file_list.insert(entry.path().to_str().unwrap().to_string());
+            }
         }
 
         Self {
             path: paths.clone(),
-            file_list: filelist,
+            file_list: file_list,
             checkers: vec![],
             reporters: vec![],
             config: Linter::load_config(config),
@@ -169,7 +179,7 @@ impl Linter {
 
     fn get_ctx(
         &self,
-        file: &str,
+        file: &String,
     ) -> (
         String,
         Vec<String>,
@@ -177,6 +187,7 @@ impl Linter {
         ProgramScope,
         IndexSet<Diagnostic>,
     ) {
+        println!("{}", file);
         let f = File::open(file).unwrap();
         let reader = BufReader::new(f);
         let mut code_line_list: Vec<String> = vec![];
@@ -185,8 +196,8 @@ impl Linter {
             code_line_list.push(line.clone());
         }
 
-        let file_list = vec![file];
-        let mut prog = load_program(&file_list, None);
+        //let file_list = vec![file];
+        let mut prog = load_program(&vec![file.as_str()], None);
         // apply_overrides(&mut program, &args.overrides, &[]);
         pre_process_program(&mut prog);
         let mut resolver = Resolver::new(

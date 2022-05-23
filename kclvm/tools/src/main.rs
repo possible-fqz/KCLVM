@@ -16,34 +16,17 @@ fn is_kclfile(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 fn main() {
-    // let files:Vec<Path> = glob("*").collect();
-    // let walker = WalkDir::new("/Users/zz/code/kcl-lint-test/test_lint/test_checker/test_data").into_iter();
-    // for entry in walker.filter_entry(|e| !is_kclfile(e)) {
-    //     println!("{}", entry.path().display());
-    // }
-    println!("-----------------------------");
-    let dir = "/Users/zz/code/kcl-lint-test/test_lint/test_checker/test_data";
+
+
+
+    let dir = "/Users/zz/code/kcl-lint-test/test_lint/test_checker";
     let dir1 = ".";
     let file = "/Users/zz/code/kcl-lint-test/test_lint/test_checker/test_data/import.k";
+    let base = "/Users/zz/code/Konfig-ant/sigma/base";
 
-    let mut lint = Linter::new(&file.to_string(), None);
-    
-    // let filelist = vec![file];
-    // let mut prog = load_program(&filelist, None);
+    println!("-----------------------------");
+    let mut lint = Linter::new(&dir.to_string(), None);
 
-    // let scope = resolve_program(&mut prog);
-
-    // pre_process_program(&mut prog);
-    // let mut resolver = Resolver::new(
-    //     &prog,
-    //     Options {
-    //         raise_err: false,
-    //         config_auto_fix: false,
-    //     },
-    // );
-    // resolver.resolve_import();
-    // let scope = resolver.check(kclvm_ast::MAIN_PKG);
-    // resolver.handler.emit();
 
     println!("------");
     lint.run();
