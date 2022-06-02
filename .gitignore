@@ -84,3 +84,8 @@ __main__.dll
 __main__.lock
 __main__.ll
 __main__.ll.lock
+
+# commitizen
+package.json
+package-lock.json
+node_modules/*
